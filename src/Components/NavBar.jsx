@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
     FaSearch, 
@@ -16,11 +16,24 @@ import {
     FaStar,
     FaTheaterMasks,
     FaSignInAlt,
-    FaUserPlus
+    FaUserPlus,
+    FaUser
 } from 'react-icons/fa';
 
 export default function NavBar() {
     const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const menuItems = [
         { icon: FaHome, label: 'Home', href: '/' },
@@ -30,7 +43,7 @@ export default function NavBar() {
     ];
 
     return (
-        <nav className="fixed w-full z-50">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1E2A38]/80 backdrop-blur-lg border-b border-white/10">
             <div className="absolute inset-0 bg-gradient-to-r from-[#1E2A38]/95 via-[#2A3B4D]/95 to-[#1E2A38]/95 backdrop-blur-md">
                 {[...Array(5)].map((_, i) => (
                     <motion.div
@@ -93,13 +106,40 @@ export default function NavBar() {
                                 className="bg-[#2A3B4D] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#008B8B] w-64"
                             />
                         </div>
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="text-[#008B8B] hover:text-[#008B8B]/80 text-2xl"
-                        >
-                            <FaUserCircle />
-                        </motion.button>
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setIsOpen(!isOpen)}
+                                className="w-10 h-10 rounded-full bg-[#008B8B]/20 hover:bg-[#008B8B]/30 flex items-center justify-center transition-colors"
+                            >
+                                <FaUser className="text-white text-lg" />
+                            </button>
+
+                            <AnimatePresence>
+                                {isOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1E2A38] border border-white/10 shadow-lg overflow-hidden"
+                                    >
+                                        <div className="py-1">
+                                            {menuItems.map((item, index) => (
+                                                <Link
+                                                    key={index}
+                                                    to={item.href}
+                                                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-[#008B8B]/20 transition-colors"
+                                                    onClick={() => setIsOpen(false)}
+                                                >
+                                                    <item.icon className="text-lg" />
+                                                    {item.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                     {/* Mobile menu button */}

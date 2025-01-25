@@ -1,40 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
-import MovieCard from "../Components/MovieCard";
-import FloatingIcons from "../Components/FloatingIcons";
 import NavBar from "../Components/NavBar";
 import ScrollReveal from "../Components/ScrollReveal";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import { Carousel, Card } from "../Components/CardCarousel";
-
-const Background = () => (
-    <div className="absolute inset-0">
-        <FloatingIcons 
-            iconColor="text-[#008B8B]" 
-            iconOpacity="10"
-            iconCount={15}
-            className="z-0"
-        />
-    </div>
-);
+import FloatingIcons from "../Components/FloatingIcons";
 
 const filterOptions = {
-    years: Array.from({ length: 15 }, (_, i) => (new Date().getFullYear() - i).toString())
-        .filter(year => parseInt(year) >= 2010),
+    years: ['2024', '2023', '2022', '2021', '2020', '2019', '2018'],
     genres: [
         'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama',
         'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller'
     ]
 };
 
+const Background = memo(() => (
+    <div className="absolute inset-0">
+        <FloatingIcons 
+            key="background-icons"
+            iconColor="text-[#008B8B]" 
+            iconOpacity="10"
+            iconCount={15}
+            className="z-0"
+        />
+    </div>
+));
+
 export default function DiscoverPage() {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [hoveredIndex, setHoveredIndex] = useState(null);
 
     const getRandomYear = () => {
         const currentYear = new Date().getFullYear();
-        return Math.floor(Math.random() * (currentYear - 2010 + 1)) + 2010;
+        return Math.floor(Math.random() * (currentYear - 1990 + 1)) + 1990;
     };
 
     const getRandomGenre = () => {
@@ -48,6 +48,7 @@ export default function DiscoverPage() {
         const seenMovies = new Set();
 
         try {
+            // Fetch multiple sets of movies with different years and genres
             for (let i = 0; i < 3; i++) {
                 const year = getRandomYear();
                 const genre = getRandomGenre();
@@ -58,9 +59,10 @@ export default function DiscoverPage() {
                 const data = await response.json();
 
                 if (data.Response === "True" && data.Search) {
+                    // Get detailed info for each movie
                     const detailedMoviePromises = data.Search
                         .filter(movie => !seenMovies.has(movie.imdbID))
-                        .slice(0, 4)
+                        .slice(0, 4) // Limit to 4 movies per genre
                         .map(movie => 
                             fetch(`https://www.omdbapi.com/?apikey=a0c4e62f&i=${movie.imdbID}`)
                                 .then(res => res.json())
@@ -68,9 +70,7 @@ export default function DiscoverPage() {
 
                     const detailedMovies = await Promise.all(detailedMoviePromises);
                     detailedMovies.forEach(movie => {
-                        if (movie.Response === "True" && 
-                            !seenMovies.has(movie.imdbID) && 
-                            parseInt(movie.Year) >= 2010) {
+                        if (movie.Response === "True" && !seenMovies.has(movie.imdbID)) {
                             seenMovies.add(movie.imdbID);
                             moviesData.push(movie);
                         }
@@ -82,7 +82,9 @@ export default function DiscoverPage() {
                 throw new Error("No movies found");
             }
 
-            setMovies(moviesData.sort(() => Math.random() - 0.5));
+            // Shuffle the movies array
+            const shuffledMovies = moviesData.sort(() => Math.random() - 0.5);
+            setMovies(shuffledMovies);
         } catch (err) {
             setError("Failed to fetch movies");
             console.error(err);
@@ -90,9 +92,10 @@ export default function DiscoverPage() {
         setLoading(false);
     };
 
+    // Fetch movies on initial load and set up auto-refresh interval
     useEffect(() => {
         fetchMovies();
-        const refreshInterval = setInterval(fetchMovies, 300000);
+        const refreshInterval = setInterval(fetchMovies, 300000); // Refresh every 5 minutes
         return () => clearInterval(refreshInterval);
     }, []);
 
@@ -101,15 +104,29 @@ export default function DiscoverPage() {
         title: movie.Title,
         category: `${movie.Year} · ${movie.Genre?.split(', ')[0]}`,
         content: (
-            <div className="space-y-4">
-                <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="flex items-center gap-1">⭐ {movie.imdbRating}</span>
+            <div className="space-y-6">
+                <div className="flex flex-wrap gap-4 text-sm">
+                    <span className="flex items-center gap-1">
+                        ⭐ {movie.imdbRating}
+                    </span>
                     <span>{movie.Runtime}</span>
+                    <span>{movie.Rated}</span>
                 </div>
                 
-                <p className="text-gray-300 leading-relaxed line-clamp-4">{movie.Plot}</p>
+                <p className="text-gray-300 leading-relaxed">{movie.Plot}</p>
                 
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-4">
+                    <div>
+                        <span className="text-gray-400">Director:</span>
+                        <span className="ml-2 text-white">{movie.Director}</span>
+                    </div>
+                    <div>
+                        <span className="text-gray-400">Cast:</span>
+                        <span className="ml-2 text-white">{movie.Actors}</span>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
                     {movie.Genre?.split(', ').map((genre, index) => (
                         <span 
                             key={index}
@@ -126,21 +143,33 @@ export default function DiscoverPage() {
     return (
         <>
             <NavBar />
-            <div className="min-h-screen bg-gradient-to-br from-[#1E2A38] via-[#3C3F41] to-[#1E2A38] relative pt-16 pb-8">
-                <Background />
-
-                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-gradient-to-br from-[#1E2A38] via-[#3C3F41] to-[#1E2A38] relative">
+            <Background />
+                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 pointer-events-none" />
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
                     <ScrollReveal>
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-bold text-white mb-2">Discover Modern Movies</h1>
-                            <p className="text-gray-400 text-base mb-4">
+                        <div className="text-center mb-6">
+                            <motion.h1 
+                                className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#008B8B] to-teal-400 pt-10 mb-3"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                Discover Modern Movies
+                            </motion.h1>
+                            <motion.p 
+                                className="text-gray-400 text-base md:text-lg mb-6 max-w-2xl mx-auto"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                            >
                                 Explore a curated selection of movies from 2010 onwards
-                            </p>
+                            </motion.p>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={fetchMovies}
-                                className="bg-[#008B8B] hover:bg-[#008B8B]/90 text-white px-6 py-2 rounded-lg text-base font-semibold transition-colors"
+                                className="bg-[#008B8B] hover:bg-[#008B8B]/90 text-white px-6 py-2.5 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-[#008B8B]/20 hover:shadow-2xl"
                                 disabled={loading}
                             >
                                 Refresh Movies
@@ -148,25 +177,54 @@ export default function DiscoverPage() {
                         </div>
                     </ScrollReveal>
 
-                    {loading && <LoadingSpinner />}
+                    {loading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="mt-4"
+                        >
+                            <LoadingSpinner />
+                        </motion.div>
+                    )}
                     
                     {error && (
-                        <div className="text-red-400 text-center mt-4">
+                        <motion.div 
+                            className="text-red-400 text-center mt-4 p-3 bg-red-500/10 rounded-lg"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
                             {error}
-                        </div>
+                        </motion.div>
                     )}
 
                     {movies.length > 0 && (
-                        <div className="mt-4">
+                        <motion.div 
+                            className="mt-4"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5 }}
+                        >
                             <Carousel
                                 items={movieCards.map((card, index) => (
-                                    <Card key={index} card={card} index={index} layout={true} />
+                                    <div
+                                        key={index}
+                                        className={`transition-all duration-300 ${
+                                            hoveredIndex !== null && hoveredIndex !== index 
+                                                ? 'blur-sm brightness-50 scale-95' 
+                                                : ''
+                                        }`}
+                                        onMouseEnter={() => setHoveredIndex(index)}
+                                        onMouseLeave={() => setHoveredIndex(null)}
+                                    >
+                                        <Card card={card} index={index} layout={true} />
+                                    </div>
                                 ))}
                             />
-                        </div>
+                        </motion.div>
                     )}
                 </div>
             </div>
         </>
     );
-} 
+}
