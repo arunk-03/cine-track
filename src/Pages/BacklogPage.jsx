@@ -34,14 +34,18 @@ export default function BacklogPage() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://www.omdbapi.com/?apikey=a0c4e62f&s=${query}&type=movie`
+        `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&s=${encodeURIComponent(query)}&type=movie`
       );
       const data = await response.json();
-      if (data.Search) {
+      
+      if (data.Response === "True") {
         setSearchResults(data.Search.slice(0, 5));
+      } else {
+        setSearchResults([]);
       }
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error('Search error:', error);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -49,28 +53,25 @@ export default function BacklogPage() {
 
   const addToBacklog = (movie) => {
     const now = new Date();
-    const dateLogged = now.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const timeLogged = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
+    const dateLogged = now.toLocaleDateString();
+    const timeLogged = now.toLocaleTimeString();
+
     const newMovie = {
       ...movie,
       dateLogged,
       timeLogged,
-      id: movie.imdbID
     };
-    
-    setBacklogMovies(prev => [newMovie, ...prev]);
-    showToast(`Added "${movie.Title}" to backlog`);
-    setIsSearchOpen(false);
+
+    setBacklogMovies(prev => [...prev, newMovie]);
     setSearchQuery("");
     setSearchResults([]);
+    setIsSearchOpen(false);
+    showToast("Movie added to backlog!");
+  };
+
+  const removeFromBacklog = (imdbID) => {
+    setBacklogMovies(prev => prev.filter(movie => movie.imdbID !== imdbID));
+    showToast("Movie removed from backlog!");
   };
 
   return (
@@ -109,7 +110,7 @@ export default function BacklogPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {backlogMovies.map((movie, index) => (
                 <motion.div
-                  key={movie.id}
+                  key={movie.imdbID}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -152,115 +153,101 @@ export default function BacklogPage() {
               animate={{ opacity: 1 }}
               className="text-center py-12"
             >
-              <p className="text-gray-400 text-lg">
-                Your backlog is empty. Start marking movies as watched!
+              <p className="text-gray-400">No movies in your backlog yet.</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Click the + button to add movies you plan to watch later.
               </p>
             </motion.div>
           )}
-        </div>
-      </div>
 
-      <AnimatePresence>
-        {isSearchOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-              onClick={() => setIsSearchOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-1/3 top-1/4 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50 mx-auto"
-            >
-              <div className="bg-[#1E2A38] rounded-xl shadow-2xl border border-white/10 overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-white">Search Movies</h3>
-                    <button
-                      onClick={() => setIsSearchOpen(false)}
-                      className="text-gray-400 hover:text-white transition-colors"
-                    >
-                      <FaTimes className="text-xl" />
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        handleSearch(e.target.value);
-                      }}
-                      placeholder="Type movie name..."
-                      className="w-full bg-[#2A3B4D] text-white pl-9 pr-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008B8B] text-sm placeholder:text-gray-400"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                {isLoading && (
-                  <div className="px-4 py-6 text-gray-400 text-center flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#008B8B] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">Searching...</span>
-                  </div>
-                )}
-
-                {searchResults.length > 0 && (
-                  <div className="max-h-[40vh] overflow-y-auto">
-                    <div className="p-2">
-                      {searchResults.map((movie) => (
-                        <motion.button
-                          key={movie.imdbID}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          onClick={() => addToBacklog(movie)}
-                          className="w-full p-2 hover:bg-[#008B8B]/10 rounded-lg flex items-center gap-3 transition-colors group"
-                        >
-                          {movie.Poster !== 'N/A' ? (
-                            <img
-                              src={movie.Poster}
-                              alt={movie.Title}
-                              className="w-10 h-14 object-cover rounded shadow-lg group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-10 h-14 bg-[#2A3B4D] rounded flex items-center justify-center text-gray-400 text-xs">
-                              No Poster
-                            </div>
-                          )}
-                          <div className="text-left flex-1">
-                            <p className="text-white text-sm font-medium group-hover:text-[#008B8B] transition-colors">{movie.Title}</p>
-                            <p className="text-gray-400 text-xs mt-0.5">{movie.Year}</p>
-                          </div>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <FaPlus className="text-[#008B8B] text-sm" />
-                          </div>
-                        </motion.button>
-                      ))}
+          <AnimatePresence>
+            {isSearchOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-24 px-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setIsSearchOpen(false);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-[#1E2A38] rounded-xl shadow-xl w-full max-w-lg overflow-hidden"
+                >
+                  <div className="p-4 border-b border-gray-700">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          handleSearch(e.target.value);
+                        }}
+                        placeholder="Search for a movie..."
+                        className="w-full bg-[#2A3441] text-white rounded-lg pl-10 pr-4 py-2 outline-none focus:ring-2 focus:ring-[#008B8B]"
+                        autoFocus
+                      />
+                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
                   </div>
-                )}
 
-                {searchQuery && !isLoading && searchResults.length === 0 && (
-                  <div className="px-4 py-6 text-gray-400 text-center text-sm">
-                    No movies found for "{searchQuery}"
-                  </div>
-                )}
+                  {isLoading && (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#008B8B] mx-auto"></div>
+                    </div>
+                  )}
 
-                {!searchQuery && !isLoading && (
-                  <div className="px-4 py-6 text-gray-400 text-center text-sm">
-                    Start typing to search for movies
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  {searchResults.length > 0 && (
+                    <div className="max-h-[40vh] overflow-y-auto">
+                      <div className="p-2">
+                        {searchResults.map((movie) => (
+                          <button
+                            key={movie.imdbID}
+                            onClick={() => addToBacklog(movie)}
+                            className="w-full p-2 hover:bg-[#008B8B]/10 rounded-lg flex items-center gap-3 transition-colors group"
+                          >
+                            {movie.Poster !== 'N/A' ? (
+                              <img
+                                src={movie.Poster}
+                                alt={movie.Title}
+                                className="w-10 h-14 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-10 h-14 bg-[#2A3B4D] rounded flex items-center justify-center text-gray-400 text-xs">
+                                No Poster
+                              </div>
+                            )}
+                            <div className="flex-1 text-left">
+                              <h4 className="text-white font-medium group-hover:text-[#008B8B] transition-colors">
+                                {movie.Title}
+                              </h4>
+                              <p className="text-gray-400 text-sm">{movie.Year}</p>
+                            </div>
+                            <FaPlus className="text-gray-400 group-hover:text-[#008B8B] transition-colors" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!isLoading && searchQuery && searchResults.length === 0 && (
+                    <div className="p-4 text-center text-gray-400">
+                      No movies found.
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </>
   );
-} 
+}
