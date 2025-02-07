@@ -28,7 +28,7 @@ export default function WatchlistPage() {
   const [editingMovie, setEditingMovie] = useState(null);
   const { showToast } = useToast();
 
-  // Load saved data from localStorage
+
   useEffect(() => {
     const savedWatchlist = localStorage.getItem('watchlist');
     const savedRatings = localStorage.getItem('watchlistRatings');
@@ -39,7 +39,7 @@ export default function WatchlistPage() {
     if (savedReviews) setReviews(JSON.parse(savedReviews));
   }, []);
 
-  // Save data to localStorage whenever it changes
+ 
   useEffect(() => {
     localStorage.setItem('watchlist', JSON.stringify(watchlistMovies));
     localStorage.setItem('watchlistRatings', JSON.stringify(ratings));

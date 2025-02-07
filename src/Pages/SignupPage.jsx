@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { Label } from "../Components/Label";
 import { Input } from "../Components/Input";
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
@@ -7,8 +7,11 @@ import FloatingIcons from "../Components/FloatingIcons";
 import NavBar from "../Components/NavBar";
 import ScrollReveal from "../Components/ScrollReveal";
 import { Link } from "react-router-dom";
+import { useToast } from "../Components/Toast";
+import { useNavigate } from "react-router-dom";
+import ToastContainer from "../Components/Toast";
 
-// Create a memoized background component
+
 const Background = memo(() => (
     <div className="absolute inset-0">
         <FloatingIcons 
@@ -26,6 +29,42 @@ export default function SignupPage() {
     const mouseY = useMotionValue(0);
     const radius = 400;
 
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const { addToast } = useToast();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch("http://localhost:5000/api/users/signup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name, email, password }),
+            });
+            const data = await response.json();
+            console.log(data);
+    
+            if (response.ok) {
+                addToast('Signup successful', 'success');
+                navigate('/login');
+            } else {
+                addToast(data.message || 'Signup failed', 'error');
+            }
+        } catch (err) {
+            console.log(err);
+            addToast(err.message || 'Signup failed', 'error');
+        } finally {
+            setName("");
+            setEmail("");
+            setPassword("");
+        }
+    };
+
     function handleMouseMove({ currentTarget, clientX, clientY }) {
         const { left, top } = currentTarget.getBoundingClientRect();
         mouseX.set(clientX - left);
@@ -35,6 +74,7 @@ export default function SignupPage() {
     return (
         <>
         <NavBar />
+        <ToastContainer />
         <div className="h-screen bg-gradient-to-br from-[#1E2A38] via-[#3C3F41] to-[#1E2A38] relative overflow-hidden flex items-center justify-center pt-10">
             <Background />
 
@@ -63,7 +103,7 @@ export default function SignupPage() {
                             <p className="text-gray-400">Join us on your movie journey</p>
                         </div>
 
-                        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-white/90">
                                     Full Name
@@ -75,6 +115,9 @@ export default function SignupPage() {
                                         type="text"
                                         placeholder="Enter your name"
                                         className="pl-10 bg-black/20"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -90,6 +133,9 @@ export default function SignupPage() {
                                         type="email"
                                         placeholder="Enter your email"
                                         className="pl-10 bg-black/20"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -105,6 +151,9 @@ export default function SignupPage() {
                                         type="password"
                                         placeholder="••••••••"
                                         className="pl-10 bg-black/20"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
                                     />
                                 </div>
                             </div>

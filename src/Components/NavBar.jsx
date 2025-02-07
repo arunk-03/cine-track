@@ -3,21 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createSlug } from '../utils';
 import { 
-    FaSearch, 
-    FaUserCircle, 
+    FaSearch,
     FaBars, 
     FaTimes,
     FaHome,
     FaCompass,
     FaBookmark,
-    FaHeart,
     FaFilm,
     FaVideo,
     FaCamera,
     FaStar,
     FaTheaterMasks,
-    FaSignInAlt,
-    FaUserPlus,
     FaUser
 } from 'react-icons/fa';
 
@@ -177,8 +173,8 @@ export default function NavBar() {
     const menuItems = [
         { icon: FaHome, label: 'Home', href: '/' },
         { icon: FaCompass, label: 'Discover', href: '/discover' },
-        { icon: FaUserPlus, label: 'Sign Up', href: '/signup' },
-        { icon: FaSignInAlt, label: 'Login', href: '/login' },
+        { icon: FaBookmark, label: 'Watchlist', href: '/watchlist' },
+        { icon: FaVideo, label: 'Backlog', href: '/backlog' },
     ];
 
     return (
@@ -255,18 +251,25 @@ export default function NavBar() {
                                         transition={{ duration: 0.2 }}
                                         className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1E2A38] border border-white/10 shadow-lg overflow-hidden"
                                     >
-                                        <div className="py-1">
-                                            {menuItems.map((item, index) => (
-                                                <Link
-                                                    key={index}
-                                                    to={item.href}
-                                                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-[#008B8B]/20 transition-colors"
-                                                    onClick={() => setIsOpen(false)}
-                                                >
-                                                    <item.icon className="text-lg" />
-                                                    {item.label}
-                                                </Link>
-                                            ))}
+                                        <div className="flex flex-col space-y-2">
+                                            <Link
+                                                to="/profile"
+                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
+                                            >
+                                                Profile
+                                            </Link>
+                                            <Link
+                                                to="/signup"
+                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
+                                            >
+                                                Sign Up
+                                            </Link>
+                                            <Link
+                                                to="/login"
+                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
+                                            >
+                                                Login
+                                            </Link>
                                         </div>
                                     </motion.div>
                                 )}

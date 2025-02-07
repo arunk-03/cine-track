@@ -4,7 +4,7 @@ import AboutPage from './Pages/AboutPage';
 import LoginPage from './Pages/LoginPage';
 import SignupPage from './Pages/SignupPage';
 import DiscoverPage from './Pages/DiscoverPage';
-import { ToastProvider } from './Components/Toast';
+import { ToastContainer } from './Components/Toast';
 import WatchlistPage from './Pages/WatchlistPage';
 import BacklogPage from './Pages/BacklogPage';
 import MovieDetailsPage from './Pages/MovieDetailsPage';
@@ -12,7 +12,7 @@ import TvShowDetailsPage from './Pages/TvShowDetailsPage';
 
 function App() {
   return (
-    <ToastProvider>
+    <ToastContainer>
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -26,7 +26,7 @@ function App() {
           <Route path="/tv-show/:slug/:id" element={<TvShowDetailsPage />} />
         </Routes>
       </Router>
-    </ToastProvider>
+    </ToastContainer>
   );
 }
 

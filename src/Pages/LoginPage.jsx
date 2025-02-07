@@ -6,9 +6,9 @@ import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import { FaLock, FaEnvelope, FaCheck } from "react-icons/fa";
 import FloatingIcons from "../Components/FloatingIcons";
 import NavBar from "../Components/NavBar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../Components/Toast";
 
-// Create a memoized background component
 const Background = memo(() => (
     <div className="absolute inset-0">
         <FloatingIcons 
@@ -26,6 +26,37 @@ export default function LoginPage() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const radius = 400;
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const { addToast } = useToast();
+  const navigate = useNavigate();
+
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      console.log(data);
+  
+      if (response.ok) {
+        addToast('Login successful', 'success');
+        navigate('/'); 
+      } else {
+        addToast(data.message || 'Login failed', 'error');
+      }
+    } catch (err) {
+      console.log(err);
+      addToast(err.message || 'Login failed', 'error');
+    }
+  };
 
   function handleMouseMove({ currentTarget, clientX, clientY }) {
     const { left, top } = currentTarget.getBoundingClientRect();
@@ -69,7 +100,7 @@ export default function LoginPage() {
               <p className="text-gray-400">Sign in to continue your journey</p>
             </div>
 
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-white/90">
                   Email Address
@@ -81,6 +112,8 @@ export default function LoginPage() {
                     type="email"
                     placeholder="Enter your email"
                     className="pl-10 bg-black/20"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -96,6 +129,8 @@ export default function LoginPage() {
                     type="password"
                     placeholder="••••••••"
                     className="pl-10 bg-black/20"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
               </div>
