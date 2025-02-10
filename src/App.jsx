@@ -1,3 +1,4 @@
+import { UserProvider } from './Backend/Context/UserContext.jsx';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './Pages/HomePage';
 import AboutPage from './Pages/AboutPage';
@@ -9,24 +10,29 @@ import WatchlistPage from './Pages/WatchlistPage';
 import BacklogPage from './Pages/BacklogPage';
 import MovieDetailsPage from './Pages/MovieDetailsPage';
 import TvShowDetailsPage from './Pages/TvShowDetailsPage';
+import ProtectedRoute from './Components/ProtectedRoute';
+import SearchPage from "./Pages/SearchPage";
 
 function App() {
   return (
-    <ToastContainer>
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/discover" element={<DiscoverPage />} />
-          <Route path="/watchlist" element={<WatchlistPage />} />
-          <Route path="/backlog" element={<BacklogPage />} />
-          <Route path="/movies/:slug/:id" element={<MovieDetailsPage />} />
-          <Route path="/tv-show/:slug/:id" element={<TvShowDetailsPage />} />
-        </Routes>
-      </Router>
-    </ToastContainer>
+    <UserProvider>
+      <ToastContainer>
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
+            <Route path="/backlog" element={<ProtectedRoute><BacklogPage /></ProtectedRoute>} />
+            <Route path="/movies/:slug/:id" element={<ProtectedRoute><MovieDetailsPage /></ProtectedRoute>} />
+            <Route path="/tv-show/:slug/:id" element={<ProtectedRoute><TvShowDetailsPage /></ProtectedRoute>} />
+            <Route path="/search" element={<SearchPage />} />
+          </Routes>
+        </Router>
+      </ToastContainer>
+    </UserProvider>
   );
 }
 

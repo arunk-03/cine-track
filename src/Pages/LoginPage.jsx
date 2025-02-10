@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, memo } from "react";
+import React, { useState, memo, useContext } from "react";
 import { Label } from "../Components/Label";
 import { Input } from "../Components/Input";
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
@@ -8,6 +8,7 @@ import FloatingIcons from "../Components/FloatingIcons";
 import NavBar from "../Components/NavBar";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../Components/Toast";
+import UserContext from '../Backend/Context/UserContext.jsx';
 
 const Background = memo(() => (
     <div className="absolute inset-0">
@@ -22,6 +23,8 @@ const Background = memo(() => (
 ));
 
 export default function LoginPage() {
+  const { login } = useContext(UserContext);
+  const navigate = useNavigate();
   const [isChecked, setIsChecked] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -31,30 +34,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   const { addToast } = useToast();
-  const navigate = useNavigate();
 
 const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5000/api/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      console.log(data);
-  
-      if (response.ok) {
+        await login({ email, password });
         addToast('Login successful', 'success');
-        navigate('/'); 
-      } else {
-        addToast(data.message || 'Login failed', 'error');
-      }
-    } catch (err) {
-      console.log(err);
-      addToast(err.message || 'Login failed', 'error');
+        navigate('/');
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+        addToast(errorMessage, 'error');
     }
   };
 

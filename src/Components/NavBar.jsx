@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createSlug } from '../utils';
 import { 
     FaSearch,
@@ -158,6 +158,8 @@ const SearchInput = React.memo(({ isMobile = false }) => {
 export default function NavBar() {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -176,6 +178,13 @@ export default function NavBar() {
         { icon: FaBookmark, label: 'Watchlist', href: '/watchlist' },
         { icon: FaVideo, label: 'Backlog', href: '/backlog' },
     ];
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1E2A38]/80 backdrop-blur-lg border-b border-white/10">
@@ -233,7 +242,16 @@ export default function NavBar() {
 
                     {/* Search and Profile */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <SearchInput />
+                        <form onSubmit={handleSearch} className="relative">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search movies..."
+                                className="bg-[#2A3B4D] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#008B8B] w-64"
+                                autoComplete="off"
+                            />
+                        </form>
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
@@ -309,7 +327,16 @@ export default function NavBar() {
                         </Link>
                     ))}
                     <div className="relative px-3 py-2">
-                        <SearchInput isMobile />
+                        <form onSubmit={handleSearch} className="relative">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search movies..."
+                                className="bg-[#2A3B4D] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#008B8B] w-full"
+                                autoComplete="off"
+                            />
+                        </form>
                     </div>
                 </div>
             </motion.div>

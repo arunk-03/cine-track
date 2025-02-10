@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useContext, createContext } from 'react';
 import { 
     FaPlay, 
     FaStar,
@@ -11,6 +11,7 @@ import {
 import TypewriterText from '../Components/TypewriterText';
 import FloatingIcons from '../Components/FloatingIcons';
 import NavBar from '../Components/NavBar';
+import UserContext from '../Backend/Context/UserContext.jsx';
 
 // Create a memoized background component
 const Background = memo(() => (
@@ -26,6 +27,18 @@ const Background = memo(() => (
 ));
 
 export default function HomePage() {
+    const context = useContext(UserContext);
+    
+    if (!context) {
+        return <div>Context not available</div>;
+    }
+
+    const { user, loading } = context;
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
     const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
 
     const moviePosters = [
@@ -155,6 +168,24 @@ export default function HomePage() {
                                 </motion.div>
                             ))}
                         </div>
+
+                        {user && (
+                            <div className="mt-8">
+                                <h1 className="text-2xl font-bold">
+                                    Hi, {user.name}!
+                                </h1>
+                                <button 
+                                    onClick={() => {
+                                        localStorage.removeItem('accessToken');
+                                        localStorage.removeItem('refreshToken');
+                                        window.location.href = '/login';
+                                    }}
+                                    className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                                >
+                                     
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Content - Poster Showcase */}

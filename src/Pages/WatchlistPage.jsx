@@ -1,9 +1,13 @@
-import React, { memo, useState, useEffect } from "react";
+import React, { useContext, useEffect, useState, memo } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaSearch, FaTimes, FaStar as FaStarSolid, FaRegStar as FaStarOutline } from "react-icons/fa";
 import NavBar from "../Components/NavBar";
-import FloatingIcons from "../Components/FloatingIcons";
 import { useToast } from "../Components/Toast";
+import UserContext from '../Backend/Context/UserContext';
+import { getWatchlist, addToWatchlist, removeFromWatchlist, updateRating, updateReview } from '../Backend/Context/api';
+import FloatingIcons from "../Components/FloatingIcons";
+import api from '../Backend/Context/api';
+
 
 const Background = memo(() => (
   <div className="absolute inset-0">
@@ -17,34 +21,120 @@ const Background = memo(() => (
   </div>
 ));
 
-export default function WatchlistPage() {
+const WatchlistPage = () => {
+  const { user } = useContext(UserContext);
+  const [movies, setMovies] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [watchlistMovies, setWatchlistMovies] = useState([]);
-  const [ratings, setRatings] = useState({});
-  const [reviews, setReviews] = useState({});
   const [editingMovie, setEditingMovie] = useState(null);
+  const [tempReview, setTempReview] = useState("");
   const { showToast } = useToast();
-
+  const [movieToDelete, setMovieToDelete] = useState(null);
 
   useEffect(() => {
-    const savedWatchlist = localStorage.getItem('watchlist');
-    const savedRatings = localStorage.getItem('watchlistRatings');
-    const savedReviews = localStorage.getItem('watchlistReviews');
     
-    if (savedWatchlist) setWatchlistMovies(JSON.parse(savedWatchlist));
-    if (savedRatings) setRatings(JSON.parse(savedRatings));
-    if (savedReviews) setReviews(JSON.parse(savedReviews));
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
   }, []);
 
- 
+  const handleAddMovie = async (movie) => {
+    try {
+      console.log('Attempting to add movie:', movie);
+
+      const movieData = {
+        id: movie.imdbID,
+        contentType: "movie",
+        title: movie.Title,
+        review: "",
+        rating: 0,
+        addedAt: new Date(),
+        poster: movie.Poster
+      };
+
+      console.log('Transformed movie data:', movieData);
+
+      const response = await addToWatchlist(movieData);
+      console.log('API response:', response);
+      
+      setMovies(response);
+      
+     
+      setIsSearchOpen(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      
+      if (showToast) {
+        showToast(`${movie.Title} added to watchlist!`);
+      }
+    } catch (error) {
+      console.error('Error adding movie:', error);
+      if (showToast) {
+        showToast(error.response?.data?.message || 'Failed to add movie');
+      }
+    }
+  };
+
+  const handleRemoveMovie = async (movieId, movieTitle) => {
+    setMovieToDelete({ id: movieId, title: movieTitle });
+  };
+
+  const handleRating = async (movieId, rating) => {
+    try {
+      const response = await updateRating(movieId, rating);
+      setMovies(response);
+      if (showToast) {
+        showToast("Rating saved!");
+      }
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      if (showToast) {
+        showToast('Failed to update rating');
+      }
+    }
+  };
+
+  const handleReviewEdit = (movie) => {
+    setEditingMovie(movie.id);
+    setTempReview(movie.review || '');
+  };
+
+  const handleReviewSave = async (movieId) => {
+    try {
+      const response = await updateReview(movieId, tempReview);
+      setMovies(response);
+      setEditingMovie(null);
+      if (showToast) {
+        showToast("Review saved!");
+      }
+    } catch (error) {
+      console.error('Error updating review:', error);
+      if (showToast) {
+        showToast('Failed to update review');
+      }
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('watchlist', JSON.stringify(watchlistMovies));
-    localStorage.setItem('watchlistRatings', JSON.stringify(ratings));
-    localStorage.setItem('watchlistReviews', JSON.stringify(reviews));
-  }, [watchlistMovies, ratings, reviews]);
+    const fetchWatchlist = async () => {
+      try {
+        console.log('Fetching watchlist...');
+        const watchlist = await getWatchlist();
+        console.log('Fetched watchlist:', watchlist);
+        setMovies(watchlist);
+      } catch (error) {
+        console.error('Error fetching watchlist:', error);
+        showToast('Failed to fetch watchlist');
+      }
+    };
+
+    if (user) {
+      fetchWatchlist();
+    }
+  }, [user]);
 
   const handleSearch = async (query) => {
     if (!query.trim()) {
@@ -55,78 +145,24 @@ export default function WatchlistPage() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://www.omdbapi.com/?apikey=a0c4e62f&s=${query}&type=movie`
+        `https://www.omdbapi.com/?apikey=a0c4e62f&s=${encodeURIComponent(query)}`
       );
       const data = await response.json();
       
       if (data.Search) {
+        console.log('Search results:', data.Search); 
         setSearchResults(data.Search.slice(0, 5));
       }
     } catch (error) {
       console.error("Search failed:", error);
+      showToast("Failed to search movies");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addTowatchlist = (movie) => {
-    const now = new Date();
-    const dateLogged = now.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const timeLogged = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    const newMovie = {
-      ...movie,
-      dateLogged,
-      timeLogged,
-      id: movie.imdbID
-    };
-    
-    setWatchlistMovies(prev => [newMovie, ...prev]);
-    showToast(`Added "${movie.Title}" to watchlist`);
-    setIsSearchOpen(false);
-    setSearchQuery("");
-    setSearchResults([]);
-  };
-
-  const removeFromWatchlist = (imdbID) => {
-    setWatchlistMovies(prev => prev.filter(movie => movie.imdbID !== imdbID));
-    setRatings(prev => {
-      const newRatings = { ...prev };
-      delete newRatings[imdbID];
-      return newRatings;
-    });
-    setReviews(prev => {
-      const newReviews = { ...prev };
-      delete newReviews[imdbID];
-      return newReviews;
-    });
-    showToast("Movie removed from watchlist!");
-  };
-
-  const handleRating = (movieId, rating) => {
-    setRatings(prev => ({
-      ...prev,
-      [movieId]: rating
-    }));
-    showToast("Rating saved!");
-  };
-
-  const handleReview = (movieId, review) => {
-    setReviews(prev => ({
-      ...prev,
-      [movieId]: review
-    }));
-  };
-
   const StarRating = ({ movieId }) => {
-    const rating = ratings[movieId] || 0;
+    const rating = movies.find((movie) => movie.id === movieId)?.rating || 0;
     
     return (
       <div className="flex items-center gap-1">
@@ -175,23 +211,23 @@ export default function WatchlistPage() {
             </motion.button>
           </div>
 
-          {watchlistMovies.length > 0 ? (
+          {movies.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
-              {watchlistMovies.map((movie, index) => (
+              {movies.map((movie, index) => (
                 <motion.div
-                  key={movie.imdbID}
+                  key={movie.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="bg-[#2A3441]/80 backdrop-blur-sm p-4 rounded-xl"
                 >
                   <div className="flex gap-4">
-                    {/* Movie Poster */}
+                   
                     <div className="flex-shrink-0">
-                      {movie.Poster !== 'N/A' ? (
+                      {movie.poster !== 'N/A' ? (
                         <img
-                          src={movie.Poster}
-                          alt={movie.Title}
+                          src={movie.poster}
+                          alt={movie.title}
                           className="w-24 h-36 object-cover rounded-lg"
                         />
                       ) : (
@@ -201,15 +237,15 @@ export default function WatchlistPage() {
                       )}
                     </div>
 
-                    {/* Movie Details */}
+                    
                     <div className="flex-1 space-y-4">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="text-xl font-semibold text-white">{movie.Title}</h3>
-                          <p className="text-sm text-gray-400">{movie.Year}</p>
+                          <h3 className="text-xl font-semibold text-white">{movie.title}</h3>
+                          <p className="text-sm text-gray-400">{movie.year}</p>
                         </div>
                         <button
-                          onClick={() => removeFromWatchlist(movie.imdbID)}
+                          onClick={() => handleRemoveMovie(movie.id, movie.title)}
                           className="text-gray-400 hover:text-red-400 transition-colors"
                         >
                           <FaTimes />
@@ -219,33 +255,33 @@ export default function WatchlistPage() {
                       {/* Rating Section */}
                       <div>
                         <p className="text-sm font-medium text-gray-300 mb-2">Rate this movie:</p>
-                        <StarRating movieId={movie.imdbID} />
+                        <StarRating movieId={movie.id} />
                       </div>
 
                       {/* Review Section */}
                       <div>
                         <p className="text-sm font-medium text-gray-300 mb-2">Your Review:</p>
-                        {editingMovie === movie.imdbID ? (
+                        {editingMovie === movie.id ? (
                           <div className="space-y-2">
                             <textarea
-                              value={reviews[movie.imdbID] || ''}
-                              onChange={(e) => handleReview(movie.imdbID, e.target.value)}
+                              value={tempReview}
+                              onChange={(e) => setTempReview(e.target.value)}
                               placeholder="Write your thoughts about the movie..."
                               className="w-full p-3 rounded-lg bg-[#1E2A38] text-white text-sm resize-none focus:ring-2 focus:ring-[#008B8B] outline-none"
                               rows="3"
                             />
                             <div className="flex justify-end gap-2">
                               <button
-                                onClick={() => setEditingMovie(null)}
+                                onClick={() => {
+                                  setEditingMovie(null);
+                                  setTempReview("");
+                                }}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors text-sm"
                               >
                                 Cancel
                               </button>
                               <button
-                                onClick={() => {
-                                  setEditingMovie(null);
-                                  showToast("Review saved!");
-                                }}
+                                onClick={() => handleReviewSave(movie.id)}
                                 className="px-4 py-2 bg-[#008B8B] text-white rounded-lg hover:bg-[#00BFBF] transition-colors text-sm"
                               >
                                 Save Review
@@ -254,13 +290,13 @@ export default function WatchlistPage() {
                           </div>
                         ) : (
                           <div>
-                            {reviews[movie.imdbID] ? (
+                            {movie.review ? (
                               <div className="space-y-2">
                                 <p className="text-sm text-gray-300 bg-[#1E2A38] p-3 rounded-lg">
-                                  {reviews[movie.imdbID]}
+                                  {movie.review}
                                 </p>
                                 <button
-                                  onClick={() => setEditingMovie(movie.imdbID)}
+                                  onClick={() => handleReviewEdit(movie)}
                                   className="text-sm text-[#008B8B] hover:text-[#00BFBF] transition-colors flex items-center gap-1"
                                 >
                                   Edit Review
@@ -268,7 +304,7 @@ export default function WatchlistPage() {
                               </div>
                             ) : (
                               <button
-                                onClick={() => setEditingMovie(movie.imdbID)}
+                                onClick={() => handleReviewEdit(movie)}
                                 className="px-4 py-2 bg-[#1E2A38] text-[#008B8B] rounded-lg hover:bg-[#1E2A38]/80 transition-colors text-sm flex items-center gap-2"
                               >
                                 <FaPlus className="text-xs" />
@@ -347,7 +383,10 @@ export default function WatchlistPage() {
                         {searchResults.map((movie) => (
                           <button
                             key={movie.imdbID}
-                            onClick={() => addTowatchlist(movie)}
+                            onClick={() => {
+                              console.log('Movie clicked:', movie); // Debug log
+                              handleAddMovie(movie);
+                            }}
                             className="w-full p-2 hover:bg-[#008B8B]/10 rounded-lg flex items-center gap-3 transition-colors group"
                           >
                             {movie.Poster !== 'N/A' ? (
@@ -383,8 +422,68 @@ export default function WatchlistPage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Confirmation Modal */}
+          <AnimatePresence>
+            {movieToDelete && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setMovieToDelete(null);
+                  }
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-[#1E2A38] rounded-xl shadow-xl p-6 max-w-sm w-full"
+                >
+                  <h3 className="text-xl font-semibold text-white mb-4">Confirm Removal</h3>
+                  <p className="text-gray-300 mb-6">
+                    Are you sure you want to remove "{movieToDelete.title}" from your watchlist?
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setMovieToDelete(null)}
+                      className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await removeFromWatchlist(movieToDelete.id);
+                          setMovies(response);
+                          if (showToast) {
+                            showToast(`"${movieToDelete.title}" removed from watchlist!`);
+                          }
+                        } catch (error) {
+                          console.error('Error removing from watchlist:', error);
+                          if (showToast) {
+                            showToast('Failed to remove movie');
+                          }
+                        } finally {
+                          setMovieToDelete(null);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </>
   );
-}
+};
+
+export default WatchlistPage;

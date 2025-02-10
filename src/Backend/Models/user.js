@@ -6,22 +6,32 @@ const userSchema = new Schema({
     password: { type: String, required: true },
     watchlist: [
         {
-            id: { type: String, required: true }, // Movie/TV show ID
-            contentType: { type: String, enum: ["movie", "tv-show"], required: true }, // "movie" or "tv-show"
-            title: { type: String, required: true }, // Title of the content
-            review: { type: String, default: "" }, // User's review
-            addedAt: { type: Date, default: Date.now }, // Timestamp
+            id: { type: String, required: true }, 
+            contentType: { type: String, enum: ["movie", "tv-show"], required: true }, 
+            title: { type: String, required: true }, 
+            review: { type: String, default: "" },
+            poster: { type: String, default: "" },
+            rating: { 
+                type: Number, 
+                min: 0,
+                max: 5, 
+                default: 0,
+                validate: {
+                    validator: function(v) {
+                        return v === 0 || (v >= 1 && v <= 5);
+                    },
+                    message: props => `${props.value} is not a valid rating! Rating must be 0 (unrated) or between 1 and 5`
+                }
+            },
+            addedAt: { type: Date, default: Date.now }, 
         },
     ],
-    backlogs: [
-        {
-            id: { type: String, required: true }, // Movie/TV show ID
-            contentType: { type: String, enum: ["movie", "tv-show"], required: true }, // "movie" or "tv-show"
-            title: { type: String, required: true }, // Title of the content
-            review: { type: String, default: "" }, // User's review
-            addedAt: { type: Date, default: Date.now }, // Timestamp
-        },
-    ],
+    backlogs: [{
+        id: String,
+        title: String,
+        poster: String,
+        addedAt: { type: Date, default: Date.now }
+    }],
 });
 
 export default model("User", userSchema);
