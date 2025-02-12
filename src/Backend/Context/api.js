@@ -99,8 +99,10 @@ const updateRating = async (movieId, rating) => {
             throw new Error('No authentication token found');
         }
 
+        console.log('Sending rating update:', { movieId, rating }); // Add logging
+
         const response = await api.patch(`/users/watchlist/${movieId}/rating`, 
-            { rating },
+            { rating: Number(rating) }, // Ensure rating is a number
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -108,9 +110,12 @@ const updateRating = async (movieId, rating) => {
                 }
             }
         );
+        
+        console.log('Rating update response:', response.data); // Add logging
         return response.data;
     } catch (error) {
         console.error('Error updating rating:', error);
+        console.error('Error details:', error.response?.data); // Add detailed error logging
         throw error;
     }
 };

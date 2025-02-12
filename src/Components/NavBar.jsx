@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { createSlug } from '../utils';
@@ -14,8 +14,13 @@ import {
     FaCamera,
     FaStar,
     FaTheaterMasks,
-    FaUser
+    FaUser,
+    FaSignOutAlt,
+    FaUserCircle
 } from 'react-icons/fa';
+import { UserContext } from '../Backend/Context/UserContext';
+import { useToast } from '../Components/Toast';
+
 
 const SearchInput = React.memo(({ isMobile = false }) => {
     const [query, setQuery] = useState('');
@@ -52,7 +57,7 @@ const SearchInput = React.memo(({ isMobile = false }) => {
                 combinedResults.push(...tvData.Search.map(item => ({ ...item, contentType: 'tv-show' })));
             }
 
-            // Sort by year (newest first) and limit to 5 results
+           
             setResults(combinedResults
                 .sort((a, b) => parseInt(b.Year) - parseInt(a.Year))
                 .slice(0, 5)
@@ -156,15 +161,23 @@ const SearchInput = React.memo(({ isMobile = false }) => {
 });
 
 export default function NavBar() {
+    const { user, logout } = useContext(UserContext);
+    const navigate = useNavigate();
+    const { addToast: showToast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const profileMenuRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
+            }
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+                setShowProfileMenu(false);
             }
         };
 
@@ -183,6 +196,16 @@ export default function NavBar() {
         e.preventDefault();
         if (searchQuery.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            showToast('Successfully logged out');
+            navigate('/discover');
+        } catch (error) {
+            showToast('Error logging out');
         }
     };
 
@@ -223,7 +246,7 @@ export default function NavBar() {
                         </Link>
                     </div>
 
-                    {/* Desktop Navigation */}
+                    {/* Navigation Links */}
                     <div className="hidden md:flex items-center space-x-8">
                         {menuItems.map((item, index) => (
                             <motion.div key={index}>
@@ -240,59 +263,63 @@ export default function NavBar() {
                         ))}
                     </div>
 
-                    {/* Search and Profile */}
-                    <div className="hidden md:flex items-center space-x-4">
-                        <form onSubmit={handleSearch} className="relative">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search movies..."
-                                className="bg-[#2A3B4D] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#008B8B] w-64"
-                                autoComplete="off"
-                            />
-                        </form>
-                        <div className="relative" ref={dropdownRef}>
-                            <button
-                                onClick={() => setIsOpen(!isOpen)}
-                                className="w-10 h-10 rounded-full bg-[#008B8B]/20 hover:bg-[#008B8B]/30 flex items-center justify-center transition-colors"
-                            >
-                                <FaUser className="text-white text-lg" />
-                            </button>
+                    {/* Auth Buttons */}
+                    <div className="flex items-center gap-4">
+                        {user ? (
+                            <div className="relative" ref={profileMenuRef}>
+                                <button
+                                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                    className="p-2 rounded-full hover:bg-[#2A3441] transition-colors"
+                                >
+                                    <FaUserCircle className="w-6 h-6 text-gray-300 hover:text-[#008B8B]" />
+                                </button>
 
-                            <AnimatePresence>
-                                {isOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 10 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1E2A38] border border-white/10 shadow-lg overflow-hidden"
-                                    >
-                                        <div className="flex flex-col space-y-2">
+                                <AnimatePresence>
+                                    {showProfileMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute right-0 mt-2 w-48 rounded-lg bg-[#2A3441] shadow-xl z-50"
+                                        >
                                             <Link
                                                 to="/profile"
-                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
+                                                className="flex items-center gap-2 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#3A4451] transition-colors rounded-t-lg"
+                                                onClick={() => setShowProfileMenu(false)}
                                             >
-                                                Profile
+                                                <FaUser className="w-4 h-4" />
+                                                <span>Profile</span>
                                             </Link>
-                                            <Link
-                                                to="/signup"
-                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
+                                            <button
+                                                onClick={() => {
+                                                    setShowProfileMenu(false);
+                                                    setShowLogoutConfirm(true);
+                                                }}
+                                                className="flex items-center gap-2 w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#3A4451] transition-colors rounded-b-lg"
                                             >
-                                                Sign Up
-                                            </Link>
-                                            <Link
-                                                to="/login"
-                                                className="px-4 py-2 text-white hover:bg-[#008B8B]/20 transition-colors"
-                                            >
-                                                Login
-                                            </Link>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                                                <FaSignOutAlt className="w-4 h-4" />
+                                                <span>Logout</span>
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/login"
+                                    className="text-gray-300 hover:text-white transition-colors"
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    to="/signup"
+                                    className="bg-[#008B8B] text-white px-4 py-2 rounded-lg hover:bg-[#007A7A] transition-colors"
+                                >
+                                    Sign Up
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}
@@ -340,6 +367,46 @@ export default function NavBar() {
                     </div>
                 </div>
             </motion.div>
+
+            {/* Logout Confirmation Modal */}
+            <AnimatePresence>
+                {showLogoutConfirm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-[#2A3441] p-6 rounded-lg shadow-xl max-w-sm w-full mx-4"
+                        >
+                            <h3 className="text-xl font-semibold text-white mb-4">
+                                Confirm Logout
+                            </h3>
+                            <p className="text-gray-300 mb-6">
+                                Are you sure you want to logout?
+                            </p>
+                            <div className="flex justify-end gap-4">
+                                <button
+                                    onClick={() => setShowLogoutConfirm(false)}
+                                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="px-4 py-2 bg-[#008B8B] text-white rounded-lg hover:bg-[#007A7A] transition-colors"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </nav>
     );
 }

@@ -12,6 +12,8 @@ import TypewriterText from '../Components/TypewriterText';
 import FloatingIcons from '../Components/FloatingIcons';
 import NavBar from '../Components/NavBar';
 import UserContext from '../Backend/Context/UserContext.jsx';
+import { TypeAnimation } from 'react-type-animation';
+import { Link } from 'react-router-dom';
 
 // Create a memoized background component
 const Background = memo(() => (
@@ -107,15 +109,15 @@ export default function HomePage() {
                         >
                             Track your watched films, share reviews, and discover your next favorite movie.
                         </motion.p>
-
+                        <Link to="/login">
                         <motion.button
-                            className="bg-[#008B8B] hover:bg-[#008B8B]/80 text-white px-8 py-3 rounded-full flex items-center gap-2 transition-colors"
+                            className="bg-[#008B8B] hover:bg-[#008B8B]/80 text-white px-8 py-3 rounded-full flex items-center gap-2 transition-colors my-9"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
                             <FaPlay /> Get Started
                         </motion.button>
-
+                        </Link>
                         {/* Features Grid */}
                         <div className="grid grid-cols-2 gap-4 mt-8">
                             {[
@@ -149,42 +151,24 @@ export default function HomePage() {
                             ))}
                         </div>
 
-                        {/* Stats */}
-                        <div className="flex gap-8 mt-8">
-                            {[
-                                { number: "10K+", label: "Movies" },
-                                { number: "50K+", label: "Reviews" },
-                                { number: "100K+", label: "Users" }
-                            ].map(({ number, label }, index) => (
-                                <motion.div
-                                    key={index}
-                                    className="text-center"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.8 + (index * 0.1) }}
-                                >
-                                    <div className="text-[#008B8B] text-2xl font-bold">{number}</div>
-                                    <div className="text-gray-400 text-sm">{label}</div>
-                                </motion.div>
-                            ))}
-                        </div>
-
                         {user && (
-                            <div className="mt-8">
-                                <h1 className="text-2xl font-bold">
-                                    Hi, {user.name}!
-                                </h1>
-                                <button 
-                                    onClick={() => {
-                                        localStorage.removeItem('accessToken');
-                                        localStorage.removeItem('refreshToken');
-                                        window.location.href = '/login';
-                                    }}
-                                    className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                                >
-                                     
-                                </button>
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5, delay: 1 }}
+                                className="mt-12 bg-[#1E2A38] p-6 rounded-xl shadow-lg inline-block"
+                            >
+                                <TypeAnimation
+                                    sequence={[
+                                        500,
+                                        `Welcome back, ${user.name}`,
+                                    ]}
+                                    wrapper="h2"
+                                    speed={50}
+                                    className="text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-[#008B8B] to-teal-400"
+                                    repeat={1}
+                                />
+                            </motion.div>
                         )}
                     </div>
 

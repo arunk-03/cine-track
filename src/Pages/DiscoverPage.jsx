@@ -1,10 +1,13 @@
-import React, { useState, useEffect, memo } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, memo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import NavBar from "../Components/NavBar";
 import ScrollReveal from "../Components/ScrollReveal";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import { Carousel, Card } from "../Components/CardCarousel";
 import FloatingIcons from "../Components/FloatingIcons";
+import { FiRefreshCw } from "react-icons/fi";
+import { FaFilm, FaRegCompass } from "react-icons/fa";
+
 
 const filterOptions = {
     years: ['2024', '2023', '2022', '2021', '2020', '2019', '2018'],
@@ -26,29 +29,50 @@ const Background = memo(() => (
     </div>
 ));
 
+const StatsCard = ({ icon: Icon, label, value }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#2A3441]/50 backdrop-blur-sm p-4 rounded-xl flex items-center gap-4"
+    >
+        <div className="bg-[#008B8B]/20 p-3 rounded-lg">
+            <Icon className="w-6 h-6 text-[#008B8B]" />
+        </div>
+        <div>
+            <div className="text-2xl font-bold text-white">{value}</div>
+            <div className="text-sm text-gray-400">{label}</div>
+        </div>
+    </motion.div>
+);
+
 export default function DiscoverPage() {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [contentFilter, setContentFilter] = useState('all');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const getRandomYear = () => {
         const currentYear = new Date().getFullYear();
-        return Math.floor(Math.random() * (currentYear - 1990 + 1)) + 1990;
+        return Math.floor(Math.random() * (currentYear - 2010 + 1)) + 2010;
     };
 
     const getRandomGenre = () => {
-        return filterOptions.genres[Math.floor(Math.random() * filterOptions.genres.length)];
+        const genres = [
+            'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama',
+            'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller'
+        ];
+        return genres[Math.floor(Math.random() * genres.length)];
     };
 
     const fetchMovies = async () => {
-        setLoading(true);
+        setIsRefreshing(true);
         setError(null);
         const moviesData = [];
         const seenMovies = new Set();
 
         try {
-            // Fetch multiple sets of movies with different years and genres
             for (let i = 0; i < 3; i++) {
                 const year = getRandomYear();
                 const genre = getRandomGenre();
@@ -59,10 +83,9 @@ export default function DiscoverPage() {
                 const data = await response.json();
 
                 if (data.Response === "True" && data.Search) {
-                    // Get detailed info for each movie
                     const detailedMoviePromises = data.Search
                         .filter(movie => !seenMovies.has(movie.imdbID))
-                        .slice(0, 4) // Limit to 4 movies per genre
+                        .slice(0, 4)
                         .map(movie => 
                             fetch(`https://www.omdbapi.com/?apikey=a0c4e62f&i=${movie.imdbID}`)
                                 .then(res => res.json())
@@ -82,7 +105,6 @@ export default function DiscoverPage() {
                 throw new Error("No movies found");
             }
 
-            // Shuffle the movies array
             const shuffledMovies = moviesData.sort(() => Math.random() - 0.5);
             setMovies(shuffledMovies);
         } catch (err) {
@@ -90,16 +112,23 @@ export default function DiscoverPage() {
             console.error(err);
         }
         setLoading(false);
+        setIsRefreshing(false);
     };
 
-    // Fetch movies on initial load and set up auto-refresh interval
     useEffect(() => {
         fetchMovies();
-        const refreshInterval = setInterval(fetchMovies, 300000); // Refresh every 5 minutes
+        const refreshInterval = setInterval(fetchMovies, 300000);
         return () => clearInterval(refreshInterval);
     }, []);
 
-    const movieCards = movies.map((movie, index) => ({
+    const getFilteredMovies = useCallback(() => {
+        if (contentFilter === 'all') return movies;
+        return movies.filter(movie => 
+            contentFilter === 'movie' ? movie.Type === 'movie' : movie.Type === 'series'
+        );
+    }, [movies, contentFilter]);
+
+    const movieCards = getFilteredMovies().map((movie, index) => ({
         src: movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/300x450?text=No+Poster',
         title: movie.Title,
         category: `${movie.Year} · ${movie.Genre?.split(', ')[0]}`,
@@ -144,85 +173,109 @@ export default function DiscoverPage() {
         <>
             <NavBar />
             <div className="min-h-screen bg-gradient-to-br from-[#1E2A38] via-[#3C3F41] to-[#1E2A38] relative">
-            <Background />
+                <Background />
                 <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 pointer-events-none" />
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
                     <ScrollReveal>
-                        <div className="text-center mb-6">
+                        <div className="text-center mb-12">
+                            <motion.div 
+                                className="inline-block mb-3"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <FaRegCompass className="w-12 h-12 text-[#008B8B] mx-auto mb-4 mt-6" />
+                            </motion.div>
                             <motion.h1 
-                                className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#008B8B] to-teal-400 pt-10 mb-3"
+                                className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#008B8B] to-teal-400 mb-6"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                Discover Modern Movies
+                                Discover Movies
                             </motion.h1>
                             <motion.p 
-                                className="text-gray-400 text-base md:text-lg mb-6 max-w-2xl mx-auto"
+                                className="text-gray-400 text-lg md:text-xl mb-8 max-w-2xl mx-auto"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.1 }}
                             >
-                                Explore a curated selection of movies from 2010 onwards
+                                Explore a curated selection of cinematic masterpieces
                             </motion.p>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={fetchMovies}
-                                className="bg-[#008B8B] hover:bg-[#008B8B]/90 text-white px-6 py-2.5 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-[#008B8B]/20 hover:shadow-2xl"
-                                disabled={loading}
-                            >
-                                Refresh Movies
-                            </motion.button>
+                            
+                            <div className="flex justify-center mb-8">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={fetchMovies}
+                                    disabled={loading || isRefreshing}
+                                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#008B8B] to-teal-500 text-white px-6 py-4 rounded-xl text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-[#008B8B]/20 hover:shadow-2xl disabled:opacity-50"
+                                >
+                                    <FiRefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    Refresh Movies
+                                </motion.button>
+                            </div>
                         </div>
                     </ScrollReveal>
 
-                    {loading && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="mt-4"
-                        >
-                            <LoadingSpinner />
-                        </motion.div>
-                    )}
+                    <AnimatePresence>
+                        {loading && !isRefreshing && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex flex-col items-center justify-center py-12 space-y-4"
+                            >
+                                <LoadingSpinner />
+                                <p className="text-gray-400 animate-pulse">Discovering movies...</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     
-                    {error && (
-                        <motion.div 
-                            className="text-red-400 text-center mt-4 p-3 bg-red-500/10 rounded-lg"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
-                            {error}
-                        </motion.div>
-                    )}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div 
+                                className="text-red-400 text-center mt-4 p-6 bg-red-500/10 backdrop-blur-sm rounded-xl border border-red-500/20"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                            >
+                                <p className="text-lg font-semibold mb-2">Oops!</p>
+                                <p>{error}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    {movies.length > 0 && (
-                        <motion.div 
-                            className="mt-4"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <Carousel
-                                items={movieCards.map((card, index) => (
-                                    <div
-                                        key={index}
-                                        className={`transition-all duration-300 ${
-                                            hoveredIndex !== null && hoveredIndex !== index 
-                                                ? 'blur-sm brightness-50 scale-95' 
-                                                : ''
-                                        }`}
-                                        onMouseEnter={() => setHoveredIndex(index)}
-                                        onMouseLeave={() => setHoveredIndex(null)}
-                                    >
-                                        <Card card={card} index={index} layout={true} />
-                                    </div>
-                                ))}
-                            />
-                        </motion.div>
-                    )}
+                    <AnimatePresence>
+                        {movies.length > 0 && (
+                            <motion.div 
+                                className="mt-8"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <Carousel
+                                    items={movieCards.map((card, index) => (
+                                        <motion.div
+                                            key={index}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            className={`transition-all duration-300 ${
+                                                hoveredIndex !== null && hoveredIndex !== index 
+                                                    ? 'blur-sm brightness-50 scale-95' 
+                                                    : ''
+                                            }`}
+                                            onMouseEnter={() => setHoveredIndex(index)}
+                                            onMouseLeave={() => setHoveredIndex(null)}
+                                        >
+                                            <Card card={card} index={index} layout={true} />
+                                        </motion.div>
+                                    ))}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </>

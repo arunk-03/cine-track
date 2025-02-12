@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaPlus, FaList, FaStar, FaFilm, FaTv, FaCheck } from "react-icons/fa";
@@ -8,6 +8,7 @@ import { useToast } from "../Components/Toast";
 import { addToWatchlist, addToBacklog } from "../Backend/Context/api";
 import api from "../Backend/Context/api";
 import { createSlug } from "../utils";
+import ContentFilter from '../Components/ContentFilter';
 
 const Background = React.memo(() => (
   <div className="absolute inset-0">
@@ -29,6 +30,7 @@ export default function SearchPage() {
   const query = searchParams.get('q') || '';
   const [addedToWatchlist, setAddedToWatchlist] = useState(new Set());
   const [addedToBacklog, setAddedToBacklog] = useState(new Set());
+  const [contentFilter, setContentFilter] = useState('all');
 
   // Fetch existing watchlist and backlog items
   useEffect(() => {
@@ -172,6 +174,12 @@ export default function SearchPage() {
     }
   };
 
+  // Add this function to filter content
+  const getFilteredContent = useCallback(() => {
+    if (contentFilter === 'all') return searchResults;
+    return searchResults.filter(item => item.contentType === contentFilter);
+  }, [searchResults, contentFilter]);
+
   return (
     <>
       <NavBar />
@@ -194,13 +202,25 @@ export default function SearchPage() {
             </p>
           </motion.div>
 
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex-1">
+              {/* Your existing search input */}
+            </div>
+            <div className="ml-4">
+              <ContentFilter 
+                currentFilter={contentFilter}
+                onFilterChange={setContentFilter}
+              />
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#008B8B]"></div>
             </div>
-          ) : searchResults.length > 0 ? (
+          ) : getFilteredContent().length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-              {searchResults.map((item, index) => (
+              {getFilteredContent().map((item, index) => (
                 <motion.div
                   key={item.imdbID}
                   initial={{ opacity: 0, y: 20 }}

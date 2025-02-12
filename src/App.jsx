@@ -13,6 +13,7 @@ import TvShowDetailsPage from './Pages/TvShowDetailsPage';
 import ProtectedRoute from './Components/ProtectedRoute';
 import SearchPage from "./Pages/SearchPage";
 import ProfilePage from "./Pages/ProfilePage";
+import { AuthRoute } from './Components/ProtectedRoute';
 
 function App() {
   return (
@@ -22,8 +23,16 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={
+              <AuthRoute>
+                <LoginPage />
+              </AuthRoute>
+            } />
+            <Route path="/signup" element={
+              <AuthRoute>
+                <SignupPage />
+              </AuthRoute>
+            } />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/watchlist" element={<ProtectedRoute><WatchlistPage /></ProtectedRoute>} />
             <Route path="/backlog" element={<ProtectedRoute><BacklogPage /></ProtectedRoute>} />

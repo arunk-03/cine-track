@@ -182,16 +182,28 @@ router.post('/watchlist', verifyToken, async (req, res) => {
         }
 
         // Ensure runtime is a number
-        const runtime = typeof movie.runtime === 'string' ? 
-            parseInt(movie.runtime.replace(/\D/g, '')) : 
-            (typeof movie.runtime === 'number' ? movie.runtime : 0);
+        let runtime = 0;
+        if (movie.runtime !== undefined) {
+            if (typeof movie.runtime === 'string') {
+                const parsed = parseInt(movie.runtime.replace(/\D/g, ''));
+                runtime = isNaN(parsed) ? 0 : parsed;
+            } else if (typeof movie.runtime === 'number') {
+                runtime = movie.runtime;
+            }
+        }
 
         const movieToAdd = {
-            ...movie,
-            runtime: runtime // Guaranteed to be a number
+            id: movie.id,
+            contentType: movie.contentType,
+            title: movie.title,
+            review: movie.review || "",
+            rating: movie.rating || 0,
+            poster: movie.poster || "",
+            runtime: runtime,
+            addedAt: new Date()
         };
 
-        console.log('Movie to add:', movieToAdd);
+        console.log('Processed movie data:', movieToAdd);
 
         user.watchlist.push(movieToAdd);
         await user.save();
@@ -200,7 +212,6 @@ router.post('/watchlist', verifyToken, async (req, res) => {
             new Date(b.addedAt) - new Date(a.addedAt)
         );
 
-        console.log('Movie added to watchlist:', movieToAdd.title, 'Runtime:', movieToAdd.runtime);
         res.json(sortedWatchlist);
     } catch (error) {
         console.error('Detailed error:', error);

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, memo } from 'react';
+import React, { useContext, useEffect, useState, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaSearch, FaTimes, FaStar as FaStarSolid, FaRegStar as FaStarOutline } from "react-icons/fa";
 import NavBar from "../Components/NavBar";
@@ -7,6 +7,8 @@ import UserContext from '../Backend/Context/UserContext';
 import { getWatchlist, addToWatchlist, removeFromWatchlist, updateRating, updateReview } from '../Backend/Context/api';
 import FloatingIcons from "../Components/FloatingIcons";
 import api from '../Backend/Context/api';
+import { FiFilm, FiTv } from 'react-icons/fi';
+import ContentFilter from '../Components/ContentFilter';
 
 
 const Background = memo(() => (
@@ -32,6 +34,7 @@ const WatchlistPage = () => {
   const [tempReview, setTempReview] = useState("");
   const { showToast } = useToast();
   const [movieToDelete, setMovieToDelete] = useState(null);
+  const [contentFilter, setContentFilter] = useState('all');
 
   useEffect(() => {
     
@@ -45,18 +48,19 @@ const WatchlistPage = () => {
     try {
       console.log('Original movie data:', movie);
 
-      // First fetch complete movie details to get runtime
+     
       const detailsResponse = await fetch(
         `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&i=${movie.imdbID}`
       );
       const movieDetails = await detailsResponse.json();
       console.log('OMDB movie details:', movieDetails);
 
-      // Convert runtime from "XXX min" to number
+      
       let runtimeMinutes = 0;
       if (movieDetails.Runtime) {
-        const runtimeString = movieDetails.Runtime.replace(/\D/g, '');
-        runtimeMinutes = parseInt(runtimeString);
+      
+        runtimeMinutes = parseInt(movieDetails.Runtime.replace(/\D/g, ''));
+        if (isNaN(runtimeMinutes)) runtimeMinutes = 0;
       }
 
       const movieData = {
@@ -66,7 +70,7 @@ const WatchlistPage = () => {
         review: "",
         rating: 0,
         poster: movie.Poster,
-        runtime: runtimeMinutes, // Ensure it's a number
+        runtime: runtimeMinutes,
         addedAt: new Date().toISOString()
       };
 
@@ -84,8 +88,7 @@ const WatchlistPage = () => {
         showToast(`${movie.Title} added to watchlist!`);
       }
     } catch (error) {
-      console.error('Full error:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('Error adding movie:', error);
       if (showToast) {
         showToast(error.response?.data?.message || 'Failed to add movie');
       }
@@ -98,16 +101,34 @@ const WatchlistPage = () => {
 
   const handleRating = async (movieId, rating) => {
     try {
-      const response = await updateRating(movieId, rating);
-      setMovies(response);
-      if (showToast) {
-        showToast("Rating saved!");
-      }
+        // Ensure rating is a number and within valid range
+        const numericRating = Number(rating);
+        if (isNaN(numericRating) || numericRating < 0 || numericRating > 5) {
+            throw new Error('Invalid rating value');
+        }
+
+        console.log('Updating rating:', { movieId, rating: numericRating }); // Add logging
+
+        const response = await updateRating(movieId, numericRating);
+        
+        if (response) {
+            setMovies(prevMovies => 
+                prevMovies.map(movie => 
+                    movie.id === movieId 
+                        ? { ...movie, rating: numericRating }
+                        : movie
+                )
+            );
+            if (showToast) {
+                showToast("Rating saved!");
+            }
+        }
     } catch (error) {
-      console.error('Error updating rating:', error);
-      if (showToast) {
-        showToast('Failed to update rating');
-      }
+        console.error('Error updating rating:', error);
+        console.error('Error details:', error.response?.data); // Add detailed error logging
+        if (showToast) {
+            showToast(error.response?.data?.message || 'Failed to update rating');
+        }
     }
   };
 
@@ -193,6 +214,11 @@ const WatchlistPage = () => {
     );
   };
 
+  const getFilteredContent = useCallback(() => {
+    if (contentFilter === 'all') return movies;
+    return movies.filter(item => item.contentType === contentFilter);
+  }, [movies, contentFilter]);
+
   return (
     <>
       <NavBar />
@@ -225,9 +251,23 @@ const WatchlistPage = () => {
             </motion.button>
           </div>
 
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex-1">
+              <ContentFilter 
+                currentFilter={contentFilter}
+                onFilterChange={setContentFilter}
+              />
+            </div>
+          </div>
+
           {movies.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {movies.map((movie, index) => (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            >
+              {getFilteredContent().map((movie, index) => (
                 <motion.div
                   key={movie.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -332,7 +372,7 @@ const WatchlistPage = () => {
                   </div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -398,7 +438,7 @@ const WatchlistPage = () => {
                           <button
                             key={movie.imdbID}
                             onClick={() => {
-                              console.log('Movie clicked:', movie); // Debug log
+                              console.log('Movie clicked:', movie); 
                               handleAddMovie(movie);
                             }}
                             className="w-full p-2 hover:bg-[#008B8B]/10 rounded-lg flex items-center gap-3 transition-colors group"
