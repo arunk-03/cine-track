@@ -43,7 +43,21 @@ const WatchlistPage = () => {
 
   const handleAddMovie = async (movie) => {
     try {
-      console.log('Attempting to add movie:', movie);
+      console.log('Original movie data:', movie);
+
+      // First fetch complete movie details to get runtime
+      const detailsResponse = await fetch(
+        `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&i=${movie.imdbID}`
+      );
+      const movieDetails = await detailsResponse.json();
+      console.log('OMDB movie details:', movieDetails);
+
+      // Convert runtime from "XXX min" to number
+      let runtimeMinutes = 0;
+      if (movieDetails.Runtime) {
+        const runtimeString = movieDetails.Runtime.replace(/\D/g, '');
+        runtimeMinutes = parseInt(runtimeString);
+      }
 
       const movieData = {
         id: movie.imdbID,
@@ -51,18 +65,17 @@ const WatchlistPage = () => {
         title: movie.Title,
         review: "",
         rating: 0,
-        addedAt: new Date(),
-        poster: movie.Poster
+        poster: movie.Poster,
+        runtime: runtimeMinutes, // Ensure it's a number
+        addedAt: new Date().toISOString()
       };
 
-      console.log('Transformed movie data:', movieData);
+      console.log('Sending movie data:', movieData);
 
       const response = await addToWatchlist(movieData);
       console.log('API response:', response);
       
       setMovies(response);
-      
-     
       setIsSearchOpen(false);
       setSearchQuery("");
       setSearchResults([]);
@@ -71,7 +84,8 @@ const WatchlistPage = () => {
         showToast(`${movie.Title} added to watchlist!`);
       }
     } catch (error) {
-      console.error('Error adding movie:', error);
+      console.error('Full error:', error);
+      console.error('Error response:', error.response?.data);
       if (showToast) {
         showToast(error.response?.data?.message || 'Failed to add movie');
       }

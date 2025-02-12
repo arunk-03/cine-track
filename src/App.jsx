@@ -12,6 +12,7 @@ import MovieDetailsPage from './Pages/MovieDetailsPage';
 import TvShowDetailsPage from './Pages/TvShowDetailsPage';
 import ProtectedRoute from './Components/ProtectedRoute';
 import SearchPage from "./Pages/SearchPage";
+import ProfilePage from "./Pages/ProfilePage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/movies/:slug/:id" element={<ProtectedRoute><MovieDetailsPage /></ProtectedRoute>} />
             <Route path="/tv-show/:slug/:id" element={<ProtectedRoute><TvShowDetailsPage /></ProtectedRoute>} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Routes>
         </Router>
       </ToastContainer>

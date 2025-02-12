@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FaSearch, FaPlus, FaList, FaStar, FaFilm, FaTv } from "react-icons/fa";
+import { FaPlus, FaList, FaStar, FaFilm, FaTv, FaCheck } from "react-icons/fa";
 import NavBar from "../Components/NavBar";
 import FloatingIcons from "../Components/FloatingIcons";
 import { useToast } from "../Components/Toast";
 import { addToWatchlist, addToBacklog } from "../Backend/Context/api";
+import api from "../Backend/Context/api";
 import { createSlug } from "../utils";
 
 const Background = React.memo(() => (
@@ -26,6 +27,37 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
   const query = searchParams.get('q') || '';
+  const [addedToWatchlist, setAddedToWatchlist] = useState(new Set());
+  const [addedToBacklog, setAddedToBacklog] = useState(new Set());
+
+  // Fetch existing watchlist and backlog items
+  useEffect(() => {
+    const fetchExistingItems = async () => {
+      try {
+        const [watchlistResponse, backlogResponse] = await Promise.all([
+          api.get('/users/watchlist'),
+          api.get('/users/backlog')
+        ]);
+
+        // Add existing watchlist items to Set
+        const watchlistIds = new Set(
+          watchlistResponse.data.map(item => item.id)
+        );
+        setAddedToWatchlist(watchlistIds);
+
+        // Add existing backlog items to Set
+        const backlogIds = new Set(
+          backlogResponse.data.map(item => item.id)
+        );
+        setAddedToBacklog(backlogIds);
+
+      } catch (error) {
+        console.error('Error fetching existing items:', error);
+      }
+    };
+
+    fetchExistingItems();
+  }, []); // Run once when component mounts
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -70,6 +102,16 @@ export default function SearchPage() {
 
   const handleAddToWatchlist = async (movie) => {
     try {
+      const detailsResponse = await fetch(
+        `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&i=${movie.imdbID}`
+      );
+      const movieDetails = await detailsResponse.json();
+      console.log('OMDB movie details:', movieDetails);
+
+      // Convert runtime from "XXX min" to number
+      const runtimeMinutes = movieDetails.Runtime ? 
+        parseInt(movieDetails.Runtime.replace(/\D/g, '')) : 0;
+
       const movieData = {
         id: movie.imdbID,
         contentType: "movie",
@@ -77,18 +119,22 @@ export default function SearchPage() {
         review: "",
         rating: 0,
         poster: movie.Poster,
-        addedAt: new Date()
+        runtime: runtimeMinutes, // Store as number
+        addedAt: new Date().toISOString()
       };
+
+      console.log('Sending movie data:', movieData);
 
       const response = await addToWatchlist(movieData);
       
       if (response) {
+        setAddedToWatchlist(prev => new Set([...prev, movie.imdbID]));
         if (showToast) {
           showToast(`${movie.Title} added to watchlist!`);
         }
       }
     } catch (error) {
-      console.error('Error adding to watchlist:', error);
+      console.error('Error adding movie:', error);
       if (showToast) {
         showToast(error.response?.data?.message || 'Failed to add movie');
       }
@@ -97,6 +143,12 @@ export default function SearchPage() {
 
   const handleAddToBacklog = async (movie) => {
     try {
+      // Check if movie is already in watchlist
+      if (addedToWatchlist.has(movie.imdbID)) {
+        showToast(`${movie.Title} is already in your watchlist. Please remove it first.`);
+        return;
+      }
+
       const movieData = {
         id: movie.imdbID,
         title: movie.Title,
@@ -107,12 +159,13 @@ export default function SearchPage() {
       const response = await addToBacklog(movieData);
       
       if (response) {
+        setAddedToBacklog(prev => new Set([...prev, movie.imdbID]));
         if (showToast) {
           showToast(`${movie.Title} added to backlog!`);
         }
       }
     } catch (error) {
-      console.error('Error adding to backlog:', error);
+      console.error('Error adding movie:', error);
       if (showToast) {
         showToast(error.response?.data?.message || 'Failed to add movie');
       }
@@ -209,26 +262,47 @@ export default function SearchPage() {
                       </span>
                     </div>
                     <div className="flex gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddToWatchlist(item);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1 bg-[#008B8B] hover:bg-[#008B8B]/90 text-white px-2 py-1 rounded transition-all duration-300 text-xs"
-                      >
-                        <FaPlus className="text-xs" />
-                        <span>Watchlist</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddToBacklog(item);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1 bg-[#1E2A38] hover:bg-[#2A3B4D] text-[#008B8B] border border-[#008B8B] px-2 py-1 rounded transition-all duration-300 text-xs"
-                      >
-                        <FaList className="text-xs" />
-                        <span>Backlog</span>
-                      </button>
+                      {addedToWatchlist.has(item.imdbID) ? (
+                        <button
+                          disabled
+                          className="flex-1 flex items-center justify-center gap-1 bg-green-500/20 text-green-500 px-2 py-1 rounded transition-all duration-300 text-xs"
+                        >
+                          <FaCheck className="text-xs" />
+                          <span>Added to Watchlist</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAddToWatchlist(item);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 bg-[#008B8B] hover:bg-[#008B8B]/90 text-white px-2 py-1 rounded transition-all duration-300 text-xs"
+                        >
+                          <FaPlus className="text-xs" />
+                          <span>Watchlist</span>
+                        </button>
+                      )}
+                      
+                      {addedToBacklog.has(item.imdbID) ? (
+                        <button
+                          disabled
+                          className="flex-1 flex items-center justify-center gap-1 bg-green-500/20 text-green-500 px-2 py-1 rounded transition-all duration-300 text-xs"
+                        >
+                          <FaCheck className="text-xs" />
+                          <span>Added to Backlog</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAddToBacklog(item);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 bg-[#1E2A38] hover:bg-[#2A3B4D] text-[#008B8B] border border-[#008B8B] px-2 py-1 rounded transition-all duration-300 text-xs"
+                        >
+                          <FaList className="text-xs" />
+                          <span>Backlog</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

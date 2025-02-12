@@ -69,7 +69,7 @@ const handleSubmit = async (e) => {
           onMouseMove={handleMouseMove}
           className="relative"
         >
-          {/* Gradient hover effect */}
+          
           <motion.div
             className="absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 duration-300 transition-opacity"
             style={{

@@ -20,18 +20,24 @@ const userSchema = new Schema({
                     validator: function(v) {
                         return v === 0 || (v >= 1 && v <= 5);
                     },
-                    message: props => `${props.value} is not a valid rating! Rating must be 0 (unrated) or between 1 and 5`
+                    message: props => `${props.value} is not a valid rating!`
                 }
             },
-            addedAt: { type: Date, default: Date.now }, 
+            runtime: { type: Number, default: 0 },
+            addedAt: { type: Date, default: Date.now }
         },
     ],
     backlogs: [{
         id: String,
         title: String,
         poster: String,
+        runtime: String,
         addedAt: { type: Date, default: Date.now }
     }],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 export default model("User", userSchema);

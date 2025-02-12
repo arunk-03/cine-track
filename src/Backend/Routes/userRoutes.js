@@ -169,32 +169,45 @@ router.post('/watchlist', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        console.log('Request body:', req.body);
         const { movie } = req.body;
+        
         if (!movie) {
             return res.status(400).json({ message: 'Movie data is required' });
         }
 
-     
         const exists = user.watchlist.some(m => m.id === movie.id);
         if (exists) {
             return res.status(400).json({ message: 'Movie already in watchlist' });
         }
 
-        
-        user.watchlist.push(movie);
+        // Ensure runtime is a number
+        const runtime = typeof movie.runtime === 'string' ? 
+            parseInt(movie.runtime.replace(/\D/g, '')) : 
+            (typeof movie.runtime === 'number' ? movie.runtime : 0);
 
+        const movieToAdd = {
+            ...movie,
+            runtime: runtime // Guaranteed to be a number
+        };
+
+        console.log('Movie to add:', movieToAdd);
+
+        user.watchlist.push(movieToAdd);
         await user.save();
-        
         
         const sortedWatchlist = user.watchlist.sort((a, b) => 
             new Date(b.addedAt) - new Date(a.addedAt)
         );
 
-        console.log('Movie added to watchlist:', movie.title);
+        console.log('Movie added to watchlist:', movieToAdd.title, 'Runtime:', movieToAdd.runtime);
         res.json(sortedWatchlist);
     } catch (error) {
-        console.error('Error adding to watchlist:', error);
-        res.status(500).json({ message: error.message });
+        console.error('Detailed error:', error);
+        res.status(500).json({ 
+            message: error.message,
+            details: error.errors ? Object.values(error.errors).map(e => e.message) : []
+        });
     }
 });
 
@@ -210,17 +223,17 @@ router.post('/backlog', verifyToken, async (req, res) => {
             return res.status(400).json({ message: 'Movie data is required' });
         }
 
-        console.log('Received movie data:', movie); // Debug log
+        console.log('Received movie data:', movie); 
 
-        // Check if movie already exists
+        
         const exists = user.backlogs.some(m => m.id === movie.id);
         if (exists) {
             return res.status(400).json({ message: 'Movie already in backlog' });
         }
 
-        // Add movie to backlogs
+       
         if (!user.backlogs) {
-            user.backlogs = []; // Initialize if doesn't exist
+            user.backlogs = []; 
         }
 
         user.backlogs.push({
@@ -231,9 +244,9 @@ router.post('/backlog', verifyToken, async (req, res) => {
         });
 
         const savedUser = await user.save();
-        console.log('Updated user backlogs:', savedUser.backlogs); // Debug log
+        console.log('Updated user backlogs:', savedUser.backlogs); 
         
-        // Sort backlogs by addedAt date
+        
         const sortedBacklogs = savedUser.backlogs.sort((a, b) => 
             new Date(b.addedAt) - new Date(a.addedAt)
         );
@@ -403,5 +416,48 @@ router.get('/backlog', verifyToken, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+router.get('/profile', verifyToken, async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      let totalWatchTime = 0;
+      let totalRating = 0;
+      let ratedMoviesCount = 0;
+  
+      for (const movie of user.watchlist) {
+        // Runtime is already a number
+        if (typeof movie.runtime === 'number') {
+          totalWatchTime += movie.runtime;
+        }
+  
+        if (movie.rating > 0) {
+          totalRating += movie.rating;
+          ratedMoviesCount++;
+        }
+      }
+  
+      const averageRating = ratedMoviesCount > 0 
+        ? (totalRating / ratedMoviesCount).toFixed(1) 
+        : 0;
+  
+      const profileData = {
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+        totalWatchTime: totalWatchTime,
+        moviesWatched: user.watchlist.length,
+        averageRating: parseFloat(averageRating)
+      };
+  
+      res.json(profileData);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      res.status(500).json({ message: 'Error fetching profile data' });
+    }
+  });
 
 export default router;

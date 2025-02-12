@@ -54,15 +54,20 @@ const addToWatchlist = async (movie) => {
             throw new Error('No authentication token found');
         }
 
+        console.log('Sending to API:', movie); // Debug log
+
         const response = await api.post('/users/watchlist', { movie }, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
+        
+        console.log('API Response:', response.data); // Debug log
         return response.data;
     } catch (error) {
-        console.error('Error adding to watchlist:', error);
+        console.error('API Error:', error);
+        console.error('Error response:', error.response?.data);
         throw error;
     }
 };

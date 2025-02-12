@@ -81,7 +81,8 @@ export default function BacklogPage() {
         id: movie.imdbID,
         title: movie.Title,
         poster: movie.Poster,
-        addedAt: new Date()
+        addedAt: new Date(),
+        runtime: movie.Runtime,
       };
 
       console.log('Transformed movie data:', movieData);
@@ -119,29 +120,59 @@ export default function BacklogPage() {
 
   const handleMoveToWatchlist = async (movie) => {
     try {
+      console.log('Moving movie to watchlist:', movie); 
+
+      
+      await api.delete(`/users/backlog/${movie.id}`);
+
+     
       const watchlistMovie = {
         id: movie.id,
-        contentType: "movie",
+        contentType: "movie", // Explicitly set as movie
         title: movie.title,
         review: "",
         rating: 0,
         poster: movie.poster,
-        addedAt: new Date()
+        addedAt: new Date().toISOString(),
+        year: movie.year || "", // Add year if available
+        imdbRating: movie.imdbRating || "N/A" // Add IMDb rating if available
       };
 
+      console.log('Watchlist movie data:', watchlistMovie); // Debug log
+
       const watchlistResponse = await addToWatchlist(watchlistMovie);
+      console.log('Watchlist response:', watchlistResponse); // Debug log
       
       if (watchlistResponse) {
-        await handleRemoveMovie(movie.id, movie.title);
+        
+        setBacklogMovies(prevMovies => 
+          prevMovies.filter(m => m.id !== movie.id)
+        );
         
         if (showToast) {
           showToast(`${movie.title} moved to watchlist!`);
         }
       }
     } catch (error) {
-      console.error('Error moving to watchlist:', error);
+      console.error('Error details:', error.response?.data); // More detailed error logging
       if (showToast) {
-        showToast('Failed to move movie to watchlist');
+        showToast(error.response?.data?.message || 'Failed to move movie to watchlist');
+      }
+      
+      // If watchlist add fails, try to restore to backlog
+      try {
+        const backlogMovie = {
+          id: movie.id,
+          title: movie.title,
+          poster: movie.poster,
+          addedAt: new Date().toISOString()
+        };
+        await addToBacklog(backlogMovie);
+      } catch (restoreError) {
+        console.error('Failed to restore movie to backlog:', restoreError);
+        if (showToast) {
+          showToast('Error occurred. Please refresh the page.');
+        }
       }
     }
   };
