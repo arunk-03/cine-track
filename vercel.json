@@ -5,16 +5,15 @@
         "destination": "/index.html"
       }
     ],
-    "versions": [
+    "version": 2,
+    "builds": [
       {
         "src": "src/Backend/index.js",
         "use": "@vercel/node"
-      }
-    ],
-    "routes": [
+      },
       {
-        "src": "/(.*)",
-        "dest": "/src/Backend/index.js"
+        "src": "src/index.html",
+        "use": "@vercel/static"
       }
     ]
   } 
