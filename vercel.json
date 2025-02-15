@@ -4,5 +4,17 @@
         "source": "/(.*)",
         "destination": "/index.html"
       }
+    ],
+    "versions": [
+      {
+        "src": "src/Backend/index.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/src/Backend/index.js"
+      }
     ]
   } 
