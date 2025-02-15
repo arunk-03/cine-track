@@ -75,7 +75,7 @@ export default function BacklogPage() {
 
   const handleAddMovie = async (movie) => {
     try {
-      console.log('Original movie data:', movie);
+      
 
       const movieData = {
         id: movie.imdbID,
@@ -85,10 +85,10 @@ export default function BacklogPage() {
         runtime: movie.Runtime,
       };
 
-      console.log('Transformed movie data:', movieData);
+      
 
       const response = await addToBacklog(movieData);
-      console.log('API response:', response);
+    
       
       if (response) {
         setBacklogMovies(prevMovies => {
@@ -120,7 +120,7 @@ export default function BacklogPage() {
 
   const handleMoveToWatchlist = async (movie) => {
     try {
-      console.log('Moving movie to watchlist:', movie); 
+   
 
       
       await api.delete(`/users/backlog/${movie.id}`);
@@ -138,10 +138,10 @@ export default function BacklogPage() {
         imdbRating: movie.imdbRating || "N/A" // Add IMDb rating if available
       };
 
-      console.log('Watchlist movie data:', watchlistMovie); // Debug log
+ 
 
       const watchlistResponse = await addToWatchlist(watchlistMovie);
-      console.log('Watchlist response:', watchlistResponse); // Debug log
+     
       
       if (watchlistResponse) {
         

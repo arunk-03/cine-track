@@ -46,11 +46,11 @@ const WatchlistPage = () => {
 
   const handleAddMovie = async (movie) => {
     try {
-        console.log('Step 1 - Original movie data:', movie);
+        
         
         // Log the API key (without revealing the full key)
         const apiKey = import.meta.env.VITE_OMDB_API_KEY;
-        console.log('Step 1a - API Key exists:', !!apiKey);
+        
         
         if (!apiKey) {
             throw new Error('OMDB API key is not configured');
@@ -60,19 +60,16 @@ const WatchlistPage = () => {
             `https://www.omdbapi.com/?apikey=${apiKey}&i=${movie.imdbID}`
         );
         const movieDetails = await detailsResponse.json();
-        console.log('Step 2 - OMDB movie details:', movieDetails);
-        console.log('Step 3 - Runtime from API:', movieDetails.Runtime);
-
+       
         // Extract runtime from movieDetails
         let runtimeMinutes = 0;
         if (movieDetails.Runtime && typeof movieDetails.Runtime === 'string') {
-            console.log('Step 4a - Runtime is a string:', movieDetails.Runtime);
+           
             const match = movieDetails.Runtime.match(/\d+/);
-            console.log('Step 4b - Regex match result:', match);
+           
             runtimeMinutes = match ? parseInt(match[0]) : 0;
-            console.log('Step 4c - Parsed runtime minutes:', runtimeMinutes);
-        } else {
-            console.log('Step 4d - Runtime is not a string or is missing:', movieDetails.Runtime);
+           
+            
         }
 
         const movieData = {
@@ -86,12 +83,10 @@ const WatchlistPage = () => {
             addedAt: new Date().toISOString()
         };
 
-        console.log('Step 5 - Final movie data being sent:', movieData);
-        console.log('Step 5a - Runtime in final data:', movieData.runtime);
-
+       
         const response = await addToWatchlist(movieData);
-        console.log('Step 6 - API response:', response);
-        console.log('Step 6a - Runtime in response:', response.find(m => m.id === movie.imdbID)?.runtime);
+       
+
         
         setMovies(response);
         setIsSearchOpen(false);
@@ -126,7 +121,7 @@ const WatchlistPage = () => {
             throw new Error('Invalid rating value');
         }
 
-        console.log('Updating rating:', { movieId, rating: numericRating }); // Add logging
+       
 
         const response = await updateRating(movieId, numericRating);
         
@@ -175,9 +170,9 @@ const WatchlistPage = () => {
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
-        console.log('Fetching watchlist...');
+      
         const watchlist = await getWatchlist();
-        console.log('Fetched watchlist:', watchlist);
+       
         setMovies(watchlist);
       } catch (error) {
         console.error('Error fetching watchlist:', error);
@@ -204,7 +199,7 @@ const WatchlistPage = () => {
       const data = await response.json();
       
       if (data.Search) {
-        console.log('Search results:', data.Search); 
+       
         setSearchResults(data.Search.slice(0, 5));
       }
     } catch (error) {
@@ -457,7 +452,7 @@ const WatchlistPage = () => {
                           <button
                             key={movie.imdbID}
                             onClick={() => {
-                              console.log('Movie clicked:', movie); 
+                           
                               handleAddMovie(movie);
                             }}
                             className="w-full p-2 hover:bg-[#008B8B]/10 rounded-lg flex items-center gap-3 transition-colors group"

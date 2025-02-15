@@ -14,7 +14,7 @@ const api = axios.create({
 
 // Add request logging
 api.interceptors.request.use((config) => {
-    console.log('Request:', config);
+   
     const token = localStorage.getItem('accessToken');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -25,7 +25,7 @@ api.interceptors.request.use((config) => {
 // Add response logging
 api.interceptors.response.use(
     (response) => {
-        console.log('Response:', response);
+       
         return response;
     },
     async (error) => {
@@ -47,7 +47,7 @@ api.interceptors.response.use(
         }
 
         config._retryCount += 1;
-        console.log(`Retrying request (${config._retryCount}/${config.retry})`);
+       
 
         // Create new promise to handle retry
         return new Promise(resolve => {
@@ -61,7 +61,7 @@ api.interceptors.response.use(
 const getWatchlist = async () => {
     try {
         const response = await api.get('/users/watchlist');
-        console.log('Fetched watchlist:', response.data);
+        
         return response.data;
     } catch (error) {
         console.error('Error fetching watchlist:', error);
@@ -76,7 +76,8 @@ const addToWatchlist = async (movie) => {
             throw new Error('No authentication token found');
         }
 
-        console.log('Sending to API:', movie); 
+       
+
 
         const response = await api.post('/users/watchlist', { movie }, {
             headers: {
@@ -85,7 +86,7 @@ const addToWatchlist = async (movie) => {
             }
         });
         
-        console.log('API Response:', response.data); // Debug log
+      
         return response.data;
     } catch (error) {
         console.error('API Error:', error);
@@ -121,7 +122,7 @@ const updateRating = async (movieId, rating) => {
             throw new Error('No authentication token found');
         }
 
-        console.log('Sending rating update:', { movieId, rating }); // Add logging
+       
 
         const response = await api.patch(`/users/watchlist/${movieId}/rating`, 
             { rating: Number(rating) }, // Ensure rating is a number
@@ -133,7 +134,7 @@ const updateRating = async (movieId, rating) => {
             }
         );
         
-        console.log('Rating update response:', response.data); // Add logging
+       
         return response.data;
     } catch (error) {
         console.error('Error updating rating:', error);
@@ -172,7 +173,7 @@ const addToBacklog = async (movieData) => {
             throw new Error('No authentication token found');
         }
 
-        console.log('Sending movie data:', movieData); // Debug log
+      
 
         const response = await api.post('/users/backlog', { movie: movieData }, {
             headers: {

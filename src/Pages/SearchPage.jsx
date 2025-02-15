@@ -108,9 +108,9 @@ export default function SearchPage() {
         `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&i=${movie.imdbID}`
       );
       const movieDetails = await detailsResponse.json();
-      console.log('OMDB movie details:', movieDetails);
+      
 
-      // Extract runtime from the OMDB API response
+      
       let runtime = 0;
       if (movieDetails.Runtime) {
         const matches = movieDetails.Runtime.match(/\d+/);
@@ -128,7 +128,7 @@ export default function SearchPage() {
         addedAt: new Date().toISOString()
       };
 
-      console.log('Sending movie data:', movieData);
+     
 
       const response = await addToWatchlist(movieData);
       
