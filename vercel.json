@@ -4,16 +4,5 @@
         "source": "/(.*)",
         "destination": "/index.html"
       }
-    ],
-    "version": 2,
-    "builds": [
-      {
-        "src": "src/Backend/index.js",
-        "use": "@vercel/node"
-      },
-      {
-        "src": "src/index.html",
-        "use": "@vercel/static"
-      }
     ]
   } 
