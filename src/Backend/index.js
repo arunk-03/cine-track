@@ -8,7 +8,7 @@ import userRoutes from './Routes/userRoutes.js';
 config();
 const app = express();
 
-// Updated CORS configuration for Vercel
+
 app.use(cors({
     origin: ['https://cinematrack.vercel.app', 'http://localhost:5173'],
     credentials: true
@@ -16,7 +16,7 @@ app.use(cors({
 
 app.use(json());
 
-// Add a basic route for health check
+
 app.get('/', (req, res) => {
     res.json({ message: 'Backend is running' });
 });
