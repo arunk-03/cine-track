@@ -201,13 +201,7 @@ export const Card = ({ card, index, layout = false }) => {
       className="absolute top-2 right-2 z-50"
       onClick={(e) => e.stopPropagation()}
     >
-      <button
-        type="button"
-        onClick={handleActionClick}
-        className="h-8 w-8 rounded-full bg-[#008B8B]/80 hover:bg-[#008B8B] flex items-center justify-center text-white transition-all duration-200 backdrop-blur-sm"
-      >
-        <span className="text-xl font-semibold">+</span>
-      </button>
+    
 
       {showActions && (
         <div className="absolute top-full right-0 mt-2 w-36 bg-[#1E2A38] rounded-xl shadow-lg border border-white/10 overflow-hidden">
@@ -248,13 +242,13 @@ export const Card = ({ card, index, layout = false }) => {
               exit={{ opacity: 0, y: 20 }}
               ref={containerRef}
               layoutId={layout ? `card-${card.title}` : undefined}
-              className="max-w-5xl mx-auto bg-[#1E2A38] h-fit z-[60] my-10 p-4 md:p-10 rounded-3xl font-sans relative"
+              className="max-w-5xl mx-auto bg-[#1E2A38] h-fit z-[60] my-10 p-4 md:p-10 rounded-3xl font-sans relative mt-20"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
                 onClick={handleClose}
-                className="absolute top-4 right-4 h-8 w-8 bg-[#008B8B] rounded-full flex items-center justify-center hover:bg-[#008B8B]/90 transition-colors"
+                className="absolute top-0 right-4 h-8 w-8 bg-[#008B8B] rounded-full flex items-center justify-center hover:bg-[#008B8B]/90 transition-colors mt-2"
               >
                 <IconX className="h-5 w-5 text-white" />
               </button>

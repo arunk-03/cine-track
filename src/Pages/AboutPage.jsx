@@ -4,7 +4,7 @@ import { FaFilm, FaStar, FaUsers, FaCode } from "react-icons/fa";
 import FloatingIcons from "../Components/FloatingIcons";
 import NavBar from "../Components/NavBar";
 
-// Create a memoized background component
+
 const Background = memo(() => (
     <div className="absolute inset-0">
         <FloatingIcons 
@@ -17,7 +17,7 @@ const Background = memo(() => (
     </div>
 ));
 
-// Feature Card Component
+
 const FeatureCard = ({ icon: Icon, title, description }) => {
     return (
         <div className="bg-[#1E2A38]/40 backdrop-blur-sm p-6 rounded-xl border border-white/10">

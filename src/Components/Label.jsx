@@ -2,7 +2,7 @@
 import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
 
-// Utility function to replace cn
+
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const Label = React.forwardRef(({ className, ...props }, ref) => (

@@ -2,10 +2,14 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: 'http://localhost:5000/api',
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
+    retry: 3,
+    retryDelay: (retryCount) => {
+        return retryCount * 1000;
+    }
 });
 
 // Add request logging
@@ -24,14 +28,33 @@ api.interceptors.response.use(
         console.log('Response:', response);
         return response;
     },
-    (error) => {
+    async (error) => {
         console.error('Error:', error);
         if (error.response?.status === 401) {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             window.location.href = '/login';
         }
-        return Promise.reject(error);
+        const { config, message } = error;
+        if (!config || !config.retry) {
+            return Promise.reject(error);
+        }
+
+        config._retryCount = config._retryCount || 0;
+
+        if (config._retryCount >= config.retry) {
+            return Promise.reject(error);
+        }
+
+        config._retryCount += 1;
+        console.log(`Retrying request (${config._retryCount}/${config.retry})`);
+
+        // Create new promise to handle retry
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve(api(config));
+            }, config.retryDelay(config._retryCount));
+        });
     }
 );
 
@@ -53,7 +76,7 @@ const addToWatchlist = async (movie) => {
             throw new Error('No authentication token found');
         }
 
-        console.log('Sending to API:', movie); // Debug log
+        console.log('Sending to API:', movie); 
 
         const response = await api.post('/users/watchlist', { movie }, {
             headers: {

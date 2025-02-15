@@ -25,18 +25,19 @@ const Background = memo(() => (
 export default function LoginPage() {
   const { login } = useContext(UserContext);
   const navigate = useNavigate();
-  const [isChecked, setIsChecked] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const radius = 400;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const { addToast } = useToast();
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
         await login({ email, password });
         addToast('Login successful', 'success');
@@ -44,6 +45,8 @@ const handleSubmit = async (e) => {
     } catch (error) {
         const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
         addToast(errorMessage, 'error');
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -69,14 +72,13 @@ const handleSubmit = async (e) => {
           onMouseMove={handleMouseMove}
           className="relative"
         >
-          
           <motion.div
             className="absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 duration-300 transition-opacity"
             style={{
               background: useMotionTemplate`
                 radial-gradient(
                   ${radius}px circle at ${mouseX}px ${mouseY}px,
-                  rgba(0, 139, 139, 1),
+                  rgba(0, 139, 139, 0.15),
                   transparent 80%
                 )
               `,
@@ -124,38 +126,24 @@ const handleSubmit = async (e) => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-sm group/check cursor-pointer">
-                  <div 
-                    className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center
-                      ${isChecked 
-                        ? 'bg-[#008B8B] border-transparent' 
-                        : 'border-gray-400 hover:border-[#008B8B]'}`}
-                    onClick={() => setIsChecked(!isChecked)}
-                  >
-                    <motion.div
-                      initial={false}
-                      animate={isChecked ? { scale: 1 } : { scale: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <FaCheck className="text-white text-sm" />
-                    </motion.div>
-                  </div>
-                  <span className="text-white/70 group-hover/check:text-white/90">Remember me</span>
-                </label>
-                <a href="#" className="text-sm text-[#008B8B] hover:text-[#008B8B]/80">
-                  Forgot password?
-                </a>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-[#008B8B] hover:bg-[#008B8B]/90 text-white py-3 rounded-lg font-medium transition-colors"
+              <button
                 type="submit"
+                disabled={isLoading}
+                className={`w-full h-[48px] rounded-lg text-white font-medium 
+                    ${isLoading 
+                        ? 'bg-[#008B8B]/50 cursor-not-allowed' 
+                        : 'bg-[#008B8B] hover:bg-[#008B8B]/90'
+                    } 
+                    transition-colors duration-200 relative`}
               >
-                Sign In
-              </motion.button>
+                {isLoading ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="loader"></div>
+                    </div>
+                ) : (
+                    'Sign In'
+                )}
+              </button>
 
               <div className="mt-6 text-center text-white/70">
                 Don't have an account?{" "}

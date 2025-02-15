@@ -375,18 +375,18 @@ export default function NavBar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 pt-10"
                     >
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#2A3441] p-6 rounded-lg shadow-xl max-w-sm w-full mx-4"
+                            className="bg-[#2A3441] p-3 rounded-lg shadow-xl max-w-sm w-full mx-4 mt-20"
                         >
                             <h3 className="text-xl font-semibold text-white mb-4">
                                 Confirm Logout
                             </h3>
-                            <p className="text-gray-300 mb-6">
+                            <p className="text-gray-300 mb-6 mt-6">
                                 Are you sure you want to logout?
                             </p>
                             <div className="flex justify-end gap-4">
