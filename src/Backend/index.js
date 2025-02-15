@@ -3,7 +3,7 @@ import { connect } from 'mongoose';
 import { config } from 'dotenv';
 import cors from 'cors';
 import userRoutes from './Routes/userRoutes.js';
-import User from './Models/user.js';
+
 
 config();
 const app = express();
