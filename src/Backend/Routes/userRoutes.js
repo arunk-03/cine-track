@@ -4,6 +4,10 @@ import User from '../Models/user.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { refreshToken } from '../Middleware/auth.js';
+import dotenv from 'dotenv';
+// import {config} from 'dotenv';
+
+// config();
 
 const verifyToken = async (req, res, next) => {
     try {
@@ -98,24 +102,20 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        
         if (!email || !password) {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        
         const accessToken = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET,
@@ -181,12 +181,17 @@ router.post('/watchlist', verifyToken, async (req, res) => {
             return res.status(400).json({ message: 'Movie already in watchlist' });
         }
 
-        // Ensure runtime is a number
+        // Process runtime from OMDB API format
         let runtime = 0;
-        if (movie.runtime !== undefined) {
+        if (movie.Runtime) {
+            // Handle if Runtime is directly provided from OMDB API
+            const matches = movie.Runtime.match(/\d+/);
+            runtime = matches ? parseInt(matches[0]) : 0;
+        } else if (movie.runtime) {
+            // Handle if runtime is already processed
             if (typeof movie.runtime === 'string') {
-                const parsed = parseInt(movie.runtime.replace(/\D/g, ''));
-                runtime = isNaN(parsed) ? 0 : parsed;
+                const matches = movie.runtime.match(/\d+/);
+                runtime = matches ? parseInt(matches[0]) : 0;
             } else if (typeof movie.runtime === 'number') {
                 runtime = movie.runtime;
             }
@@ -199,7 +204,7 @@ router.post('/watchlist', verifyToken, async (req, res) => {
             review: movie.review || "",
             rating: movie.rating || 0,
             poster: movie.poster || "",
-            runtime: runtime,
+            runtime: runtime, // Use the processed runtime
             addedAt: new Date()
         };
 

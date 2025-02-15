@@ -26,14 +26,13 @@ const userSchema = new Schema({
             runtime: { 
                 type: Number, 
                 default: 0,
-                get: v => Math.round(v || 0),
+                get: v => Math.round(v),
                 set: v => {
                     if (typeof v === 'string') {
-                        
                         const parsed = parseInt(v.replace(/\D/g, ''));
                         return isNaN(parsed) ? 0 : parsed;
                     }
-                    return v || 0;
+                    return typeof v === 'number' ? v : 0;
                 }
             },
             addedAt: { type: Date, default: Date.now }
@@ -67,21 +66,41 @@ const userSchema = new Schema({
 userSchema.pre('save', function(next) {
     if (this.isModified('watchlist')) {
         this.watchlist = this.watchlist.map(movie => {
-            if (typeof movie.runtime === 'string') {
-                movie.runtime = parseInt(movie.runtime.replace(/\D/g, '')) || 0;
+            if (movie.runtime) {
+                if (typeof movie.runtime === 'string') {
+                    const parsed = parseInt(movie.runtime.replace(/\D/g, ''));
+                    movie.runtime = isNaN(parsed) ? 0 : parsed;
+                } else if (typeof movie.runtime === 'number') {
+                    movie.runtime = Math.round(movie.runtime);
+                }
             }
             return movie;
         });
     }
+    
     if (this.isModified('backlogs')) {
         this.backlogs = this.backlogs.map(movie => {
-            if (typeof movie.runtime === 'string') {
-                movie.runtime = parseInt(movie.runtime.replace(/\D/g, '')) || 0;
+            if (movie.runtime) {
+                if (typeof movie.runtime === 'string') {
+                    const parsed = parseInt(movie.runtime.replace(/\D/g, ''));
+                    movie.runtime = isNaN(parsed) ? 0 : parsed;
+                } else if (typeof movie.runtime === 'number') {
+                    movie.runtime = Math.round(movie.runtime);
+                }
             }
             return movie;
         });
     }
     next();
 });
+
+// Add this method to the schema
+userSchema.methods.convertRuntime = function(runtime) {
+    if (typeof runtime === 'string') {
+        const parsed = parseInt(runtime.replace(/\D/g, ''));
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return typeof runtime === 'number' ? Math.round(runtime) : 0;
+};
 
 export default model("User", userSchema);

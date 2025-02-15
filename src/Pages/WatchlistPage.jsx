@@ -46,52 +46,71 @@ const WatchlistPage = () => {
 
   const handleAddMovie = async (movie) => {
     try {
-      console.log('Original movie data:', movie);
+        console.log('Step 1 - Original movie data:', movie);
+        
+        // Log the API key (without revealing the full key)
+        const apiKey = import.meta.env.VITE_OMDB_API_KEY;
+        console.log('Step 1a - API Key exists:', !!apiKey);
+        
+        if (!apiKey) {
+            throw new Error('OMDB API key is not configured');
+        }
 
-     
-      const detailsResponse = await fetch(
-        `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_API_KEY}&i=${movie.imdbID}`
-      );
-      const movieDetails = await detailsResponse.json();
-      console.log('OMDB movie details:', movieDetails);
+        const detailsResponse = await fetch(
+            `https://www.omdbapi.com/?apikey=${apiKey}&i=${movie.imdbID}`
+        );
+        const movieDetails = await detailsResponse.json();
+        console.log('Step 2 - OMDB movie details:', movieDetails);
+        console.log('Step 3 - Runtime from API:', movieDetails.Runtime);
 
-      
-      let runtimeMinutes = 0;
-      if (movieDetails.Runtime) {
-      
-        runtimeMinutes = parseInt(movieDetails.Runtime.replace(/\D/g, ''));
-        if (isNaN(runtimeMinutes)) runtimeMinutes = 0;
-      }
+        // Extract runtime from movieDetails
+        let runtimeMinutes = 0;
+        if (movieDetails.Runtime && typeof movieDetails.Runtime === 'string') {
+            console.log('Step 4a - Runtime is a string:', movieDetails.Runtime);
+            const match = movieDetails.Runtime.match(/\d+/);
+            console.log('Step 4b - Regex match result:', match);
+            runtimeMinutes = match ? parseInt(match[0]) : 0;
+            console.log('Step 4c - Parsed runtime minutes:', runtimeMinutes);
+        } else {
+            console.log('Step 4d - Runtime is not a string or is missing:', movieDetails.Runtime);
+        }
 
-      const movieData = {
-        id: movie.imdbID,
-        contentType: "movie",
-        title: movie.Title,
-        review: "",
-        rating: 0,
-        poster: movie.Poster,
-        runtime: runtimeMinutes,
-        addedAt: new Date().toISOString()
-      };
+        const movieData = {
+            id: movie.imdbID,
+            contentType: movieDetails.Type === "series" ? "tv-show" : "movie",
+            title: movie.Title,
+            review: "",
+            rating: 0,
+            poster: movie.Poster,
+            runtime: runtimeMinutes,
+            addedAt: new Date().toISOString()
+        };
 
-      console.log('Sending movie data:', movieData);
+        console.log('Step 5 - Final movie data being sent:', movieData);
+        console.log('Step 5a - Runtime in final data:', movieData.runtime);
 
-      const response = await addToWatchlist(movieData);
-      console.log('API response:', response);
-      
-      setMovies(response);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-      setSearchResults([]);
-      
-      if (showToast) {
-        showToast(`${movie.Title} added to watchlist!`);
-      }
+        const response = await addToWatchlist(movieData);
+        console.log('Step 6 - API response:', response);
+        console.log('Step 6a - Runtime in response:', response.find(m => m.id === movie.imdbID)?.runtime);
+        
+        setMovies(response);
+        setIsSearchOpen(false);
+        setSearchQuery("");
+        setSearchResults([]);
+        
+        if (showToast) {
+            showToast(`${movie.Title} added to watchlist!`);
+        }
     } catch (error) {
-      console.error('Error adding movie:', error);
-      if (showToast) {
-        showToast(error.response?.data?.message || 'Failed to add movie');
-      }
+        console.error('Error adding movie:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            stack: error.stack
+        });
+        if (showToast) {
+            showToast(error.response?.data?.message || 'Failed to add movie');
+        }
     }
   };
 

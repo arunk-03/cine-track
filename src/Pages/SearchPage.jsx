@@ -110,9 +110,12 @@ export default function SearchPage() {
       const movieDetails = await detailsResponse.json();
       console.log('OMDB movie details:', movieDetails);
 
-      // Convert runtime from "XXX min" to number
-      const runtimeMinutes = movieDetails.Runtime ? 
-        parseInt(movieDetails.Runtime.replace(/\D/g, '')) : 0;
+      // Extract runtime from the OMDB API response
+      let runtime = 0;
+      if (movieDetails.Runtime) {
+        const matches = movieDetails.Runtime.match(/\d+/);
+        runtime = matches ? parseInt(matches[0]) : 0;
+      }
 
       const movieData = {
         id: movie.imdbID,
@@ -121,7 +124,7 @@ export default function SearchPage() {
         review: "",
         rating: 0,
         poster: movie.Poster,
-        runtime: runtimeMinutes, // Store as number
+        runtime: runtime, // Use the extracted runtime
         addedAt: new Date().toISOString()
       };
 
