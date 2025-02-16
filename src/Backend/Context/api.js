@@ -12,7 +12,7 @@ const api = axios.create({
     }
 });
 
-// Add request logging
+
 api.interceptors.request.use((config) => {
    
     const token = localStorage.getItem('accessToken');
