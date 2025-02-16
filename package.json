@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
+    "dev": "nodemon src/Backend/index.js && vite --host",
+    "build": "npm install && npm install --prefix src/Backend",
+    "start": "node src/Backend/index.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
